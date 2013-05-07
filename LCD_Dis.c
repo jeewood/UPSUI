@@ -576,6 +576,11 @@ unsigned char StrLen(char * str)
 	return p-str-1;
 }
 
+void jmemcpy(char* s, char * d,unsigned int ls)
+{
+	while(ls--) *d++ =  *s++;
+}
+
 bit isNum(char* s)
 {
 	while(*s)
@@ -607,7 +612,7 @@ void Print(char x,char y,char* str,char i)
 	if (i & 0x80)	//InEdit
 	{
 		SetPaintMode(0,0);
-		Rectangle(x,y,x+len*6+2,y+12,1);
+		Rectangle(x,y,127,y+16,1);
 		SetPaintMode(0,1);
 		Line(x,y+12,x+len*6,y+12);	
 		FontMode(1,0);
@@ -615,7 +620,7 @@ void Print(char x,char y,char* str,char i)
 	else if (i & 0x01)	//Invert
 	{
 		//SetPaintMode(0,1);
-		Rectangle(x,y,x+len*6+2,y+12,1);	
+		Rectangle(x,y,x+len*6+3,y+12,1);	
 		FontMode(1,1); inv = 0;
 	}
 	else

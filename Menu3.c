@@ -310,6 +310,7 @@ void Menu(unsigned char key)
 		break;
 	}
 	case K_OK:
+	{
 		if ((mr.sm+mr.id)->mcnt != CONST && ((mr.sm+mr.id)->ItemType == CHAR || (mr.sm+mr.id)->ItemType == INTEGER))
 		{
 			if (mr.inEdit)
@@ -329,12 +330,17 @@ void Menu(unsigned char key)
 			mr.sm = CMENU((mr.sm+mr.id)->ptr);
 			mr.bid = mr.id;
 			mr.id = 1;
+			if (mr.sm==InfoAdj)
+			{
+				jmemcpy((char*)&IValue,(char*)&Vadj,sizeof(IValue));
+			}
 		}
 		else if ((mr.sm+mr.id)->ItemType == FUNCTION)
 		{
 			CFUNC((mr.sm+mr.id)->ptr)();
 		}
 		break;
+	}
 	case K_ESC:
 		mr.inEdit = 0;
 		//ReadSetting();

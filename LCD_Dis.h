@@ -25,13 +25,15 @@ extern void ShowChar(unsigned char x,unsigned char y,unsigned char a,unsigned ch
 extern void ShowShort(unsigned char x,unsigned char y,unsigned short a,unsigned char type) ;
 extern void SetBackLight(unsigned char Deg);
 //================jwz added================
-extern unsigned char cStrLen(char * str);
-extern unsigned char StrLen(char * str);
+//extern unsigned char cStrLen(char * str);
+//extern unsigned char StrLen(char * str);
 extern unsigned char cPrint12(unsigned char cfs,unsigned char efs,char Line,char Column,char* str,unsigned char i);
-extern unsigned char PrintNum(unsigned char cfs,unsigned char efs,char Line,char Column,unsigned short num,unsigned char i);
-extern void Print6(unsigned char fs,char Line,char Column, char * str,unsigned char i);
-extern void CPrint(unsigned char cfs, unsigned char efs, char y, char x, char* str,unsigned char inv);
+//extern unsigned char PrintNum(unsigned char cfs,unsigned char efs,char Line,char Column,unsigned short num,unsigned char i);
+//extern void Print6(unsigned char fs,char Line,char Column, char * str,unsigned char i);
+//extern void CPrint(unsigned char cfs, unsigned char efs, char y, char x, char* str,unsigned char inv);
 extern unsigned char cStrLen(char * str);
 extern unsigned char StrLen(char * str);
+extern void jmemcpy(char* s, char * d,unsigned int ls);
+extern bit isNum(char* s);
 extern unsigned char Print(char x,char y,char* str,char i);
 #endif	//__LCD_DIS_h__
