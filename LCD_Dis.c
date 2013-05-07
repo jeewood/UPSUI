@@ -24,29 +24,43 @@ xdata unsigned char* dot = "…";
 
 
 char i2s_buf[15]={0};
-char *i2s(int d,char type)
+// n 显示位数
+// n>0x80 代表为无符号数
+char *i2s(int d,unsigned char n)
 {
 	bit sign = 0;
-	char i = 7;
-
-	if (d<0)
+	char i = 7,j;
+	long dx = d;
+	if (n & 0x80)
 	{
-		d = -d;
+		n -= 0x80;
+		dx = (n==3)?(unsigned char)d:(unsigned int)d;
+	}
+
+	if (dx<0)
+	{
+		dx = -dx;
 		sign = 1;
 	}
-	while(d)
+	while(dx)
 	{
-		i2s_buf[i--] = d % 10 + '0';
-		d = d / 10;
+		i2s_buf[i--] = dx % 10 + '0';
+		dx = dx / 10;
 	}
 	if (i==7) i2s_buf[i--] = '0';
 	if (sign) i2s_buf[i--] = '-';
-	while(i--)
+	j = n - (7 - i);
+	if (j>=0)
 	{
-		i2s_buf[8+i] = ' ';
+		i2s_buf[8+j] = 0;
+		while(j--)
+		{
+			i2s_buf[8+j] = 0x20;
+		}
 	}
-	return &i2s_buf[i+1];			
+	return &i2s_buf[i+1];				
 }
+
 
 //========================================================================
 // 函数: void LCD_Init(void)
@@ -319,7 +333,7 @@ void PutString_cn(unsigned char x,unsigned char y,unsigned char *p)
 // 版本:
 //      2007/07/19      First version
 //========================================================================
-/*
+
 void SetPaintMode(unsigned char Mode,unsigned char Color)
 {
 	xdata unsigned char ucTemp=0;
@@ -330,7 +344,7 @@ void SetPaintMode(unsigned char Mode,unsigned char Color)
 	SPI_Send(ucTemp);				//选择8X16的ASCII字体,字符色为黑色
 	SPI_SSSet(1);					//完成操作置SS高电平
 }
-*/
+
 //========================================================================
 // 函数: void PutPixel(unsigned char x,unsigned char y)
 // 描述: 在x、y点上绘制一个前景色的点
@@ -550,16 +564,27 @@ void SetBackLight(unsigned char Deg)
 //==========jwz add===========
 unsigned char cStrLen(char * str)
 {
-	xdata char* p = str;
+	char* p = str;
 	while(*p++);
 	return ((p-str))/2;
 }
 
 unsigned char StrLen(char * str)
 {
-	xdata char* p = str;
+	char* p = str;
 	while(*p++);
 	return p-str-1;
+}
+
+bit isNum(char* s)
+{
+	while(*s)
+	{
+		if (*s<'0' || *s>'9') 
+			return 0;
+		s++;
+	}
+	return 1;
 }
 
 //********************************************************
@@ -577,15 +602,19 @@ unsigned char StrLen(char * str)
 //********************************************************
 void Print(char x,char y,char* str,char i)
 {
-	char len = StrLen(str);
-	bit inv = 1;
+	char len = (i & 0x60)?StrLen(str):(i & 0x10)?6:4;
+	bit inv = 1, isn = 0;
 	if (i & 0x80)	//InEdit
 	{
+		SetPaintMode(0,0);
+		Rectangle(x,y,x+len*6+2,y+12,1);
+		SetPaintMode(0,1);
 		Line(x,y+12,x+len*6,y+12);	
 		FontMode(1,0);
 	}
 	else if (i & 0x01)	//Invert
 	{
+		//SetPaintMode(0,1);
 		Rectangle(x,y,x+len*6+2,y+12,1);	
 		FontMode(1,1); inv = 0;
 	}
@@ -607,16 +636,21 @@ void Print(char x,char y,char* str,char i)
 
 	if (i & 0x40)
 	{
-		PutString_cn(x,y,str);
+		isn = isNum(str);
+		PutString_cn(x+(isn?1:0),y+(isn?2:0),str);
 	}
-	else if (i & 0x30)
+	else if (i & 0x20)
 	{
-		PutString(x,y,(i& 0x10)?i2s(*(int*)str):str);
+		PutString(x+(isn?1:0),y+(isn?2:0),str);
+	}
+	else if (i & 0x10)
+	{
+		PutString(x+1,y+2,i2s(*(int*)str,6));
 	}
 	else if (i & 0x08)
 	{
 		//ShowChar(x,y,*str,1);
-		PutString(x,y,i2s(*(char*)str));
+		PutString(x+1,y+2,i2s((char)*(char*)str,0x83));
 	}
 }
 
@@ -652,7 +686,7 @@ unsigned char cPrint12(unsigned char cfs,unsigned char efs,char line,char Column
 	return (Column+13*len);
 }
 
-
+/*
 unsigned char PrintNum(unsigned char cfs,unsigned char efs,char line,char Column,unsigned int num,unsigned char i)
 {
 	xdata unsigned char len = ((i&0x10)?5:3);
@@ -678,7 +712,7 @@ unsigned char PrintNum(unsigned char cfs,unsigned char efs,char line,char Column
 
 	if (i & 0x10)
 	{
-		PutString(Column+2,line,i2s(num));
+		PutString(Column+2,line,i2s(num,));
 		//ShowShort(Column,Line,num,1);
 	}
 	else
@@ -688,6 +722,7 @@ unsigned char PrintNum(unsigned char cfs,unsigned char efs,char line,char Column
 	}
 	return (Column+13*len);
 }
+*/
 /*
 void Print6(unsigned char fs,char Line,char Column, char * str,unsigned char i)
 {
