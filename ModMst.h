@@ -2,7 +2,7 @@
 #define __MODMSTH__
 
 extern bit ModMst_Idle;
-extern unsigned char modscan;
+extern char modscan;
 
 extern void Init_ModMst();
 extern bit ModMst(char SA, char FN, unsigned int DA, unsigned int DL, char * DataOrRTN);

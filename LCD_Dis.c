@@ -499,7 +499,7 @@ void PutBitmap(unsigned char x,unsigned char y,unsigned char width,unsigned char
 	}
 	SPI_SSSet(1);					//完成操作置SS高电平
 }
-*/
+
 
 //========================================================================
 // 函数: void ShowChar(unsigned char x,unsigned char y,unsigned char Num,unsigned char type)
@@ -542,6 +542,7 @@ void ShowShort(unsigned char x,unsigned char y,unsigned short a,unsigned char ty
 	SPI_Send(type);					//要显示字符ASCII字符的ASCII码值
 	SPI_SSSet(1);					//完成操作置SS高电平
 }
+*/
 //========================================================================
 // 函数: void SetBackLight(unsigned char Deg)
 // 描述: 设置背光亮度等级
@@ -595,32 +596,47 @@ bit isNum(char* s)
 //********************************************************
 //i 控制标志
 // 0000 0000
-// 1 		 = InEdit
-//  1 		 = cstring
-//   1 		 = string
-//    1 	 = Integer
-//
-//      1 	 = char
-//       1   = Font size 1=>Large font, 0 small font
-//        0  = NC
-//         1 = invert
+// 1 		 = InEdit								0x80
+//  1 		 = cstring								0x40
+//   1 		 = string								0x20
+//    1 	 = Integer								0x10
+//													
+//      1 	 = char									0x08
+//       1   = Font size 1=>Large font,0 small font	0x04
+//        0  = NC									0x02
+//         1 = invert								0x01
 //********************************************************
-void Print(char x,char y,char* str,char i)
+#define P_EDIT	0x80
+#define P_CSTR	0x40
+#define P_ASTR	0x20
+#define P_INT	0x10
+#define P_CHAR	0x08
+#define P_FONT	0x04
+#define P_AINV	0x02
+#define P_INV	0x01
+unsigned char Print(char x,char y,char* str,char i)
 {
-	char len = (i & 0x60)?StrLen(str):(i & 0x10)?6:4;
+	char len = (i & (P_CSTR|P_ASTR))?StrLen(str):(i & P_INT)?6:4;
 	bit inv = 1, isn = 0;
-	if (i & 0x80)	//InEdit
+	if (i & P_EDIT)	//InEdit
 	{
 		SetPaintMode(0,0);
-		Rectangle(x,y,127,y+16,1);
+		Rectangle(x,y,127,y+12,1);
 		SetPaintMode(0,1);
-		Line(x,y+12,x+len*6,y+12);	
+		Line(x,y+12,x+len*6+3,y+12);	
 		FontMode(1,0);
 	}
-	else if (i & 0x01)	//Invert
+	else if (i & (P_AINV | P_INV))	//Invert
 	{
 		//SetPaintMode(0,1);
-		Rectangle(x,y,x+len*6+3,y+12,1);	
+		if (i & P_AINV)
+		{
+			Rectangle(0,y,127,y+12,1);
+		}
+		else
+		{
+			Rectangle(x,y,x+len*6+3,y+12,1);
+		}
 		FontMode(1,1); inv = 0;
 	}
 	else
@@ -628,35 +644,36 @@ void Print(char x,char y,char* str,char i)
 		FontMode(1,0);
 	}
 
-	if (i & 0x04) 	//Large font
+	if (i & P_FONT) 	//Large font
 	{
 		FontSet_cn(1, inv);
 		FontSet(1, inv);
 	}
-	else			//Small font
+	else				//Small font
 	{
 		FontSet_cn(0, inv);
 		FontSet(0, inv);
 	}
 
-	if (i & 0x40)
+	if (i & P_CSTR)
 	{
 		isn = isNum(str);
 		PutString_cn(x+(isn?1:0),y+(isn?2:0),str);
 	}
-	else if (i & 0x20)
+	else if (i & P_ASTR)
 	{
 		PutString(x+(isn?1:0),y+(isn?2:0),str);
 	}
-	else if (i & 0x10)
+	else if (i & P_INT)
 	{
 		PutString(x+1,y+2,i2s(*(int*)str,6));
 	}
-	else if (i & 0x08)
+	else if (i & P_CHAR)
 	{
 		//ShowChar(x,y,*str,1);
 		PutString(x+1,y+2,i2s((char)*(char*)str,0x83));
 	}
+	return (x+7*len);
 }
 
 unsigned char cPrint12(unsigned char cfs,unsigned char efs,char line,char Column,char * str,unsigned char i)

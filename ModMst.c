@@ -27,7 +27,7 @@ typedef union
 }WByte;
 
 bit ModMst_Idle = 1;
-unsigned char modscan = 3;
+char modscan = -3;
 
 xdata char ModMst_ReadBit_Mask = 0;
 xdata char * ModMst_RTN=0;
