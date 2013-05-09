@@ -1,0 +1,97 @@
+C51 COMPILER V9.00   FLASH                                                                 05/09/2013 21:26:07 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE FLASH
+OBJECT MODULE PLACED IN flash.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE flash.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          #include "define.h"
+   2          
+   3          #ifndef __FLASHCFILE__
+   4          #define __FLASHCFILE__
+   5          const IAP_READ  = 1;
+   6          const IAP_WRITE = 2;
+   7          const IAP_ERASE = 3;
+   8          
+   9          const EEROM_BASE_ADDR=0;//x2000;
+  10          
+  11          unsigned char Read_Byte(unsigned int addr){
+  12   1      
+  13   1              xdata unsigned char tmpb =0;
+  14   1              addr += EEROM_BASE_ADDR;
+  15   1      
+  16   1              EA=0;
+  17   1              IAP_CONTR=0x83; //5MHz(0x83) 10MHz(0x82) 20MHz(0x81) 40MHz(0x80)
+  18   1              IAP_CMD  = IAP_READ;
+  19   1              IAP_ADDRH=addr>>8;
+  20   1              IAP_ADDRL=addr&0xFF;
+  21   1              IAP_TRIG = 0x5A;
+  22   1              IAP_TRIG = 0xA5;
+  23   1              _nop_();
+  24   1              tmpb=IAP_DATA;
+  25   1      
+  26   1              IAP_CONTR = 0;
+  27   1              IAP_CMD   = 0;
+  28   1              IAP_TRIG  = 0;
+  29   1              EA=1;
+  30   1      
+  31   1              return tmpb;
+  32   1      }
+  33          
+  34          void Write_Byte(unsigned int addr,unsigned char ch){
+  35   1      
+  36   1              addr += EEROM_BASE_ADDR;
+  37   1              
+  38   1              EA=0;
+  39   1              IAP_CONTR = 0x83;
+  40   1              IAP_CMD   = IAP_WRITE;
+  41   1              IAP_ADDRH = addr>>8;
+  42   1              IAP_ADDRL =     addr&0xFF;
+  43   1              IAP_DATA = ch;
+  44   1              IAP_TRIG  = 0x5A;
+  45   1              IAP_TRIG  = 0xA5;
+  46   1              _nop_();
+  47   1      
+  48   1              IAP_CONTR = 0;
+  49   1              IAP_CMD   = 0;
+  50   1              IAP_TRIG  = 0;
+  51   1              EA = 1;
+  52   1      }
+  53          
+  54          void Erase_Section(unsigned int addr){
+  55   1      
+C51 COMPILER V9.00   FLASH                                                                 05/09/2013 21:26:07 PAGE 2   
+
+  56   1              addr += EEROM_BASE_ADDR;
+  57   1      
+  58   1              EA = 0;
+  59   1              IAP_CONTR = 0x83;
+  60   1              IAP_CMD   = IAP_ERASE;
+  61   1              IAP_ADDRH = addr>>8;
+  62   1              IAP_ADDRL = addr&0xFF;
+  63   1              IAP_TRIG  = 0x5A;
+  64   1              IAP_TRIG  = 0xA5;
+  65   1              _nop_();
+  66   1      
+  67   1              IAP_CONTR = 0;
+  68   1              IAP_CMD   = 0;
+  69   1              IAP_TRIG  = 0;
+  70   1      }
+  71          
+  72          #endif //__FLASHCFILE__
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    139    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----       1
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      8    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,234 @@
+C51 COMPILER V9.00   MODSLV                                                                05/09/2013 21:26:09 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE MODSLV
+OBJECT MODULE PLACED IN ModSlv.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE ModSlv.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          #if !defined(__MODSLV__)
+   2          #define __MODSLV__
+   3          
+   4          #include "define.h"
+   5          
+   6          #ifdef _COM0
+   7          #include "CommPort0.h"
+   8          #endif
+   9          
+  10          #ifdef _COM1
+  11          #include "CommPort1.h"
+  12          #endif
+  13          
+  14          #include "crc16.h"
+  15          
+  16          #include "flash.h"
+  17          #include "adc.h"
+  18          
+  19          #include "menu3.h"
+  20          
+  21          //extern char Adjust;           //传感器校零标志变量
+  22          
+  23          union
+  24          {
+  25                  int W;
+  26                  unsigned char B[2];
+  27                  struct
+  28                  {
+  29                          unsigned char H, L;
+  30                  }BX;
+  31          }Tmpx;
+  32          
+  33          //int Value[291];
+  34          //Value[0]=正母线电压
+  35          //Value[1]=负母线电压
+  36          //Value[2]=正母线电阻
+  37          //Value[3]=负母线电阻
+  38          //Value[4]=支路1...
+  39          
+  40          #ifdef _MODBUSSLAVE_COM0
+  41          
+  42          #define FUNC3
+  43          #define FUNC6
+  44          
+  45          void ModSlv(){
+  46   1              //data unsigned int CRC_CODE=0;
+  47   1              xdata unsigned char back_flash[20];
+  48   1              xdata unsigned char i=0;
+  49   1              xdata unsigned char DAH,DAL,DLH,DLL;
+  50   1              
+  51   1              if (COM0_RcvCompleted)
+  52   1              {
+  53   2                      if (COM0_RcvCount>0 && crc16(COM0_rsBuf,COM0_RcvCount)==0)
+  54   2                      {
+  55   3                              DAH = COM0_rsBuf[2];
+C51 COMPILER V9.00   MODSLV                                                                05/09/2013 21:26:09 PAGE 2   
+
+  56   3                              DAL = COM0_rsBuf[3];
+  57   3                              DLH = COM0_rsBuf[4];
+  58   3                              DLL = COM0_rsBuf[5];
+  59   3      
+  60   3                              switch(COM0_rsBuf[1])
+  61   3                              {
+  62   4      #ifdef FUNC1
+                                      case 1:case 2:
+                                              DL=(DL+7)/8;
+                                              COM0_rsBuf[2] = DL & 0xFF;
+                                              MoveData(&Value[DA],&COM0_rsBuf[3],DL);
+                                              COM0_SndCount = DL + 3;
+              
+                                              Tmpx.W = crc16(COM0_rsBuf,COM0_SndCount);
+                                              COM0_rsBuf[COM0_SndCount++] = Tmpx.BX.L;//CRC_CODE & 0xFF;
+                                              COM0_rsBuf[COM0_SndCount++] = Tmpx.BX.H;//(CRC_CODE >> 8) & 0xFF;
+              
+                                              break;
+              #endif
+  75   4      #ifdef FUNC3
+  76   4                              case 3:case 4:
+  77   4                                      COM0_rsBuf[2] = DLL*2;
+  78   4                                      
+  79   4                                      if (DAH==0x40 && DLL <=0x0A)
+  80   4                                      {
+  81   5                                              for (i=0;i<DLL*2;i++)
+  82   5                                              {
+  83   6                                                      COM0_rsBuf[3+i]=Read_Byte(i+DAL*2);     //读取设定值
+  84   6                                              }
+  85   5                                      }
+  86   4                                      else if (DAH==0 && DAL<=0xFF)
+  87   4                                      {
+  88   5                                              for (i=0;i<COM0_rsBuf[2];i++)
+  89   5                                              {
+  90   6                                                      COM0_rsBuf[3+i] = *((char*)&IValue+i);
+  91   6                                              }
+  92   5                                      }
+  93   4                                      else if (DAH==0x30 && DAL>=0x00 && DAL<= 0xFF && DLL==1)
+  94   4                                      {
+  95   5                                              COM0_rsBuf[2] = 2;
+  96   5                                              //Tmpx.W = Value[InTest];
+  97   5                                              COM0_rsBuf[3] = Tmpx.BX.H;
+  98   5                                              COM0_rsBuf[4] = Tmpx.BX.L;
+  99   5                                      }
+ 100   4                                      else break;
+ 101   4                                      
+ 102   4                                      COM0_SndCount = DLL*2 + 3;
+ 103   4      
+ 104   4                                      Tmpx.W = crc16(COM0_rsBuf,COM0_SndCount);
+ 105   4                                      COM0_rsBuf[COM0_SndCount++] = Tmpx.BX.L;//CRC_CODE & 0xFF;
+ 106   4                                      COM0_rsBuf[COM0_SndCount++] = Tmpx.BX.H;//(CRC_CODE >> 8) & 0xFF;
+ 107   4                                      
+ 108   4                                      break;
+ 109   4      #endif
+ 110   4      #ifdef FUNC5                            
+                                      case 5:
+                                              COM0_SndCount = COM0_RcvCount;
+                                              break;
+              #endif
+ 115   4      #ifdef FUNC6
+ 116   4                              case 6:
+ 117   4                                      if (DAH==0x40 && DAL<=0x0A)                                                     //参数设定
+C51 COMPILER V9.00   MODSLV                                                                05/09/2013 21:26:09 PAGE 3   
+
+ 118   4                                      {
+ 119   5                                              for (i=0;i<20;i++)back_flash[i]=Read_Byte(i);   //备份设定值
+ 120   5                                              
+ 121   5                                              Erase_Section(0);                                                               //删除扇区
+ 122   5                                              if (DAL==2)
+ 123   5                                              {
+ 124   6                                                      if (DLH>40) DLH = 40;
+ 125   6                                                      back_flash[4]=DLH;
+ 126   6                                                      back_flash[5]=DLL;
+ 127   6                                              }
+ 128   5                                              else
+ 129   5                                              {
+ 130   6                                                      back_flash[DAL*2]=DLH;
+ 131   6                                                      back_flash[DAL*2+1]=DLL;
+ 132   6                                              }
+ 133   5                                      
+ 134   5                                              for (i=0;i<20;i++)Write_Byte(i,back_flash[i]);  //回写设定值
+ 135   5                                              
+ 136   5                                              COM0_SndCount = COM0_RcvCount;
+ 137   5                                      }
+ 138   4                                      else
+ 139   4                                      if (DAH == 0x50 && DAL == 0x00 && DLH == 0x00 && DLL == 0x00)   //通讯传感器校零
+ 140   4                                      {
+ 141   5                                              COM0_SndCount = COM0_RcvCount;
+ 142   5                                      }
+ 143   4                                              
+ 144   4                                      break;
+ 145   4      #endif
+ 146   4      #ifdef FUNC15                           
+                                      case 15:
+                                              //ModSlv Func 15
+                                              COM0_SndCount = 6;
+                                              Tmpx.W = crc16(COM0_rsBuf,COM0_SndCount);
+                                              COM0_rsBuf[COM0_SndCount++] = Tmpx.BX.L;//CRC_CODE & 0xFF;
+                                              COM0_rsBuf[COM0_SndCount++] = Tmpx.BX.H;//(CRC_CODE >> 8) & 0xFF;
+                                              break;
+              #endif
+ 155   4      #ifdef FUNC16
+                                      case 16:
+                                              //ModSlv Func 16
+                                              COM0_SndCount = 6;
+                                              Tmpx.W = crc16(COM0_rsBuf,COM0_SndCount);
+                                              COM0_rsBuf[COM0_SndCount++] = Tmpx.BX.L;//CRC_CODE & 0xFF;
+                                              COM0_rsBuf[COM0_SndCount++] = Tmpx.BX.H;//(CRC_CODE >> 8) & 0xFF;
+                                              break;
+              #endif
+ 164   4                              }
+ 165   3                      }
+ 166   2      
+ 167   2                      COM0_RcvCompleted = 0;
+ 168   2                      COM0_RcvCount = 0;
+ 169   2      
+ 170   2                      if (COM0_SndCount>0)
+ 171   2                      {
+ 172   3                              COM0_Start_Sent();
+ 173   3                      }
+ 174   2              }
+ 175   1      }
+ 176          
+ 177          #else
+              
+              void ModSlv(){
+C51 COMPILER V9.00   MODSLV                                                                05/09/2013 21:26:09 PAGE 4   
+
+                      if (COM1_RcvCompleted){
+                              switch(COM1_rsBuf[1]){
+                              case 1:case 2:
+                                      //ModSlv Func 1,2
+                                      break;
+                              case 3:case 4:
+                                      //ModSlv Func 3,4
+                                      break;
+                              case 5:
+                                      //ModSlv Func 5
+                                      break;
+                              case 6:
+                                      //ModSlv Func 6
+                                      break;
+                              case 15:
+                                      //ModSlv Func 15
+                                      break;
+                              case 16:
+                                      //ModSlv Func 16
+                                      break;
+                              }
+                      }
+              }
+              
+              #endif
+ 205          #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    676    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----      25
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      2    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

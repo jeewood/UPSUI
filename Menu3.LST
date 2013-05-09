@@ -1,0 +1,548 @@
+C51 COMPILER V9.00   MENU3                                                                 05/09/2013 21:50:21 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE MENU3
+OBJECT MODULE PLACED IN Menu3.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE Menu3.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          #include "define.h"
+   2          #ifndef __MENUCFILE__
+   3          #define __MENUCFILE__
+   4          
+   5          #include "menu3.h"
+   6          #include "LCD_Dis.h"
+   7          
+   8          #include "flash.h"
+   9          
+  10          #ifdef _KEY
+  11          #include "key.h"
+  12          #endif
+  13          
+  14          #include "modmst.h"
+  15          
+  16          xdata CValue IValue = {0};
+  17          xdata CValue Vadj = {0};
+  18          xdata SValue SetValue = {0};
+  19          
+  20          typedef struct _strArr
+  21          {
+  22              char len;
+  23              char **sa;
+  24          } strArr;
+  25          
+  26          typedef struct _SettingModbus
+  27          {
+  28                  char f;
+  29                  int addr;
+  30                  int value;
+  31          } SMB;
+  32          
+  33          enum
+  34          {
+  35              CHAR,
+  36              INTEGER,
+  37              STRING,
+  38              FUNCTION,
+  39              CONST,
+  40                  PASSWORD,
+  41              MENU
+  42          };
+  43          
+  44          #define TYPE(sid,id) (((unsigned char)sid<<5) | ((unsigned char)id &0x1F))
+  45          
+  46          typedef struct _MenuItem
+  47          {
+  48              char id;
+  49              char *ItemStr;
+  50              char ItemType;  
+  51                  //高3位用于显示时ptr对应的类型
+  52              //｛CHAR,INTEGER为数字,STRING为预定义的字符串｝
+  53              //低5位当高3位为MENU时,低5位为菜单项数(最多31个)
+  54              void *ptr;
+  55              char mcnt;
+C51 COMPILER V9.00   MENU3                                                                 05/09/2013 21:50:21 PAGE 2   
+
+  56          } MenuItem;
+  57          
+  58          typedef struct
+  59          {
+  60              char inEdit;
+  61              char id;
+  62              char bid; //backup id
+  63          
+  64              MenuItem *mm;
+  65              MenuItem *sm;
+  66          } MENUPARAM;
+  67          
+  68          MENUPARAM mr = {0};
+  69          SMB smb = {0};
+  70          
+  71          typedef void (*FUNC)();
+  72          
+  73          #define CHAR(c)     (&c)
+  74          #define INT(i)      (&i)
+  75          #define STR(s)      (s)
+  76          #define FUNC(f)     (&f)
+  77          
+  78          #define CCHAR(c)    (*(char*)(c))
+  79          #define CINT(i)     (*(int*)(i))
+  80          #define CSTR(s)     ((char*)(s))
+  81          #define CFUNC(f)    ((FUNC)(f))
+  82          #define CMENU(m)    ((MenuItem*)(m)) //(mr.ptr)+
+  83          
+  84          #define cmi (mr.sm + mr.id)                     //当前光标对应的菜单项
+  85          #define pm CMENU(mr.sm->ptr)            //当前菜单的父菜单
+  86          
+  87          xdata unsigned int LightCnt = 0;
+  88          bit isBackLightOn = 0;
+  89          bit SettingChanged = 1;
+  90          int Password = 0;
+  91          
+  92          xdata unsigned int DspCnt = 0;
+  93          void MenuDrv(void)
+  94          {
+  95   1          if (DspCnt > 0)DspCnt++;
+  96   1          if (LightCnt > 0 && LightCnt != 255) LightCnt--;
+  97   1      }
+  98          
+  99          void LightOn(unsigned char Deg)
+ 100          {
+ 101   1          SetBackLight(Deg);
+ 102   1          isBackLightOn = 1;
+ 103   1          LightCnt = SetValue.BKLtime * 100;
+ 104   1      }
+ 105          
+ 106          void LightOff() //关闭背光
+ 107          {
+ 108   1          SetBackLight(0);
+ 109   1          isBackLightOn = 0;
+ 110   1      }
+ 111          
+ 112          
+ 113          void Welcome() //Welcome
+ 114          {
+ 115   1          ClrScreen();
+ 116   1      
+ 117   1          FontMode(0, 0);
+C51 COMPILER V9.00   MENU3                                                                 05/09/2013 21:50:21 PAGE 3   
+
+ 118   1          FontSet(0, 1);
+ 119   1          cPrint12(1, 0, 1, 24, "电力专用UPS", 0);
+ 120   1          cPrint12(0, 0, 24, 0, "上海统部电器有限公司", 0);
+ 121   1          FontMode(1, 0);
+ 122   1          FontSet(1, 1);
+ 123   1          PutString(18, 46, "TBU10KVA220V");
+ 124   1      }
+ 125          
+ 126          code char *WorkMode[] = {"在线式", "离线式"};
+ 127          code char *StartMode[] = {"自动", "手动"};
+ 128          
+ 129          code char *BaudRate[] = {"1200", "2400", "4800", "9600"};
+ 130          code char *DataBits[] = {"8", "7"};
+ 131          code char *StopBits[] = {"1", "2"};
+ 132          code char *OddEven[] = {"无", "奇", "偶"};
+ 133          
+ 134          code strArr SettingArray[] =
+ 135          {
+ 136              {2, WorkMode},      //0
+ 137              {2, StartMode},     //1
+ 138              {4, BaudRate},      //2
+ 139              {2, DataBits},      //3
+ 140              {2, StopBits},      //4
+ 141              {3, OddEven}        //5
+ 142          };
+ 143          
+ 144          code char *FaultInfo[] =
+ 145          {
+ 146              {"交流失电"},
+ 147              {"旁路失电"},
+ 148              {"电池过压"},
+ 149              {"电池欠压"},
+ 150              {"旁路失电"},
+ 151              {"旁路失电"}
+ 152          };
+ 153          
+ 154          extern code MenuItem MainMenu[];
+ 155          
+ 156          #define SSCNT 3
+ 157          code MenuItem SysSetting[] =
+ 158          {
+ 159              { -1, "系统设置", MENU, MainMenu, SSCNT},
+ 160              {0, " 工作方式:", CHAR, CHAR(SetValue.wMode), STRING},
+ 161              {1, " 启动模式:", CHAR, CHAR(SetValue.sMode), STRING},
+ 162              { -1, " 背光时间:", CHAR, CHAR(SetValue.BKLtime), CHAR}
+ 163          };
+ 164          
+ 165          #define CSCNT 5
+ 166          code MenuItem ComSetting[] =
+ 167          {
+ 168              { -1, "通迅设置", MENU, MainMenu, CSCNT},
+ 169              { -1, " 站  址:", CHAR, CHAR(SetValue.ModbusSA), CHAR},
+ 170              {2, " 波特率:", CHAR, CHAR(SetValue.BaudRate), STRING},
+ 171              {3, " 数据位:", CHAR, CHAR(SetValue.DataBits), STRING},
+ 172              {4, " 停止位:", CHAR, CHAR(SetValue.StopBits), STRING},
+ 173              {5, " 校验位:", CHAR, CHAR(SetValue.OddEven), STRING}
+ 174          };
+ 175          
+ 176          #define IMCNT 11
+ 177          code MenuItem Info[] =
+ 178          {
+ 179              { -1, "系统信息", MENU, MainMenu, IMCNT},
+C51 COMPILER V9.00   MENU3                                                                 05/09/2013 21:50:21 PAGE 4   
+
+ 180              { -1, " 输入电压:", INTEGER, INT(IValue.ACInV), CONST},
+ 181              { -1, " 输入电流:", INTEGER, INT(IValue.ACInI), CONST},
+ 182              { -1, " 输入频率:", INTEGER, INT(IValue.ACInF), CONST},
+ 183              { -1, " 输出电压:", INTEGER, INT(IValue.InvV), CONST},
+ 184              { -1, " 负载电流:", INTEGER, INT(IValue.LoadI), CONST},
+ 185              { -1, " 输出频率:", INTEGER, INT(IValue.InvF), CONST},
+ 186              { -1, " 输出功率:", INTEGER, INT(IValue.Power), CONST},
+ 187              { -1, " 功率因素:", INTEGER, INT(IValue.Factor), CONST},
+ 188              { -1, " 电池电压:", INTEGER, INT(IValue.BatV), CONST},
+ 189              { -1, " 充电电流:", INTEGER, INT(IValue.BatI), CONST},
+ 190              { -1, " 充电状态:", INTEGER, INT(IValue.ChargeStatus), CONST}
+ 191          };
+ 192          
+ 193          code MenuItem InfoAdj[] =
+ 194          {
+ 195              { -1, "参数校正", MENU, MainMenu, IMCNT},
+ 196              { -1, " 输入电压:", INTEGER, INT(Vadj.ACInV), INTEGER},
+ 197              { -1, " 输入电流:", INTEGER, INT(Vadj.ACInI), INTEGER},
+ 198              { -1, " 输入频率:", INTEGER, INT(Vadj.ACInF), INTEGER},
+ 199              { -1, " 输出电压:", INTEGER, INT(Vadj.InvV), INTEGER},
+ 200              { -1, " 负载电流:", INTEGER, INT(Vadj.LoadI), INTEGER},
+ 201              { -1, " 输出频率:", INTEGER, INT(Vadj.InvF), INTEGER},
+ 202              { -1, " 输出功率:", INTEGER, INT(Vadj.Power), INTEGER},
+ 203              { -1, " 功率因素:", INTEGER, INT(Vadj.Factor), INTEGER},
+ 204              { -1, " 电池电压:", INTEGER, INT(Vadj.BatV), INTEGER},
+ 205              { -1, " 充电电流:", INTEGER, INT(Vadj.BatI), INTEGER},
+ 206              { -1, " 充电状态:", INTEGER, INT(Vadj.ChargeStatus), INTEGER}
+ 207          };
+ 208          
+ 209          code MenuItem PasswordMenu[] =
+ 210          {
+ 211              { -1, "请输入设置密码", MENU, MainMenu, 1},
+ 212              { -1, " 密码:", INTEGER, INT(Password), 0},
+ 213              //{2,"退    出",FUNCTION,Exit,MMCNT},
+ 214          };
+ 215          
+ 216          #define MMCNT 4
+ 217          code MenuItem MainMenu[] =
+ 218          {
+ 219              { -1, "主菜单", FUNCTION, Welcome, MMCNT},
+ 220              { -1, " 系统设置", PASSWORD, SysSetting, 0},
+ 221              { -1, " 通讯设置", PASSWORD, ComSetting, 0},
+ 222              { -1, " 参数校正", PASSWORD, InfoAdj, 0},
+ 223              { -1, " 系统信息", MENU, Info, 0},
+ 224              //{2,"退    出",FUNCTION,Exit,MMCNT},
+ 225          };
+ 226          
+ 227          #define FID(id) (((id) - 1) / 3 * 3)
+ 228          void ShowMenu(MENUPARAM *m)
+ 229          {
+ 230   1          unsigned char fid = FID(m->id), i, x;
+ 231   1          if (!mr.inEdit) ClrScreen();
+ 232   1          cPrint12(0, 0, 0, (128 - 12 * cStrLen((m->sm)->ItemStr)) / 2, (m->sm)->ItemStr, 2);
+ 233   1          //Print((128 - 12 * cStrLen((m->sm)->ItemStr)) / 2, 0,(m->sm)->ItemStr, 0x42);
+ 234   1      
+ 235   1          for (i = fid + 1; i <= ((fid + 3 < m->sm->mcnt) ? (fid + 3) : (m->sm->mcnt)); i++)
+ 236   1          {
+ 237   2              x = cPrint12(0, 0, 18 + ((i - 1) % 3) * 16, 0, (m->sm + i)->ItemStr, 
+ 238   2                              (((m->sm + i)->ItemType == MENU || (m->sm + i)->ItemType == PASSWORD) && (m->id == i)));
+ 239   2              //x = Print(0, 18 + ((i - 1) % 3) * 16,(m->sm + i)->ItemStr, (((m->sm + i)->ItemType == MENU || (m
+             -->sm + i)->ItemType == PASSWORD) && (m->id == i))?0x41:0x40);
+ 240   2              if ((m->sm + i)->mcnt == STRING)
+C51 COMPILER V9.00   MENU3                                                                 05/09/2013 21:50:21 PAGE 5   
+
+ 241   2              {
+ 242   3                  if (CCHAR((m->sm + i)->ptr) > SettingArray[(m->sm + i)->id].len - 1) CCHAR((m->sm + i)->ptr) =
+             - 0;
+ 243   3                  if (CCHAR((m->sm + i)->ptr) < 0) CCHAR((m->sm + i)->ptr) = SettingArray[(m->sm + i)->id].len -
+             - 1;
+ 244   3                  //cPrint12(0,0,18+((i-1)%3)*16,x,*(SettingArray[(m->sm+i)->id].sa+CCHAR((m->sm+i)->ptr)),(m->i
+             -d==i)?(mr.inEdit?0x81:1):0);
+ 245   3                  Print(x, 18 + ((i - 1) % 3) * 16, *(SettingArray[(m->sm + i)->id].sa + CCHAR((m->sm + i)->ptr)
+             -),
+ 246   3                                      (m->id == i) ? (mr.inEdit ? 0xC0 : 0x41) : 0x40);
+ 247   3              }
+ 248   2              else if ((m->sm + i)->ItemType == CHAR)
+ 249   2              {
+ 250   3                  //PrintNum(0,0,18+((i-1)%3)*16,x,CCHAR((m->sm+i)->ptr),((m->sm+i)->mcnt!=CONST && (m->id==i))?
+             -(mr.inEdit?0x81:1):0);
+ 251   3                  Print(x, 18 + ((i - 1) % 3) * 16, (char *)((m->sm + i)->ptr), 
+ 252   3                                      ((m->sm + i)->mcnt != CONST && (m->id == i)) ? (mr.inEdit ? 0x88 : 0x09) : 0x08);
+ 253   3              }
+ 254   2              else if ((m->sm + i)->ItemType == INTEGER)
+ 255   2              {
+ 256   3                  //PrintNum(0,0,18+((i-1)%3)*16,x,CINT((m->sm+i)->ptr),((m->sm+i)->mcnt!=CONST && (m->id==i))?(
+             -mr.inEdit?0x91:0x11):0);
+ 257   3                  Print(x, 18 + ((i - 1) % 3) * 16, (char *)((m->sm + i)->ptr), 
+ 258   3                                      ((m->sm + i)->mcnt != CONST && (m->id == i)) ? (mr.inEdit ? 0x90 : 0x11) : 0x10);
+ 259   3              }
+ 260   2          }
+ 261   1      }
+ 262          
+ 263          bit ReadSetting()
+ 264          {
+ 265   1          return ModMst(2, 3, 0x4000, 4, (unsigned char *)&SetValue);
+ 266   1      }
+ 267          
+ 268          /*
+ 269          bit SaveSetting()
+ 270          {
+ 271              return ModMst(2, 16, 0x4000, 4, (unsigned char *)&SetValue);
+ 272          }
+ 273          */
+ 274          void InitMenu()
+ 275          {
+ 276   1          LCD_Init();
+ 277   1          mr.inEdit = 0;
+ 278   1          mr.mm = 0;
+ 279   1          mr.sm = MainMenu;
+ 280   1          mr.id = 1;
+ 281   1          mr.bid = mr.id;
+ 282   1          ShowMenu(&mr);
+ 283   1      }
+ 284          
+ 285          // mr.sm + mr.id => 当前项
+ 286          // cmi->ptr => 为当前项 对应的 变量或子菜单 的指针
+ 287          
+ 288          void Menu(unsigned char key)
+ 289          {
+ 290   1          switch (key)
+ 291   1          {
+ 292   2          case K_UP: case K_UPOK: case K_UPESC:
+ 293   2          {
+ 294   3              if (mr.inEdit==2)
+ 295   3              {
+ 296   4                  key = 0;
+C51 COMPILER V9.00   MENU3                                                                 05/09/2013 21:50:21 PAGE 6   
+
+ 297   4              }
+ 298   3              else if (mr.inEdit==1)
+ 299   3              {
+ 300   4                  if (cmi->ItemType == CHAR)
+ 301   4                  {
+ 302   5                      CCHAR(cmi->ptr) += (key == K_UP) ? 1 : 10;;
+ 303   5                  }
+ 304   4                  else if (cmi->ItemType == INTEGER)
+ 305   4                  {
+ 306   5                      CINT(cmi->ptr) += (key == K_UP) ? 1 : (key == K_UPOK) ? 10 : 100;
+ 307   5                  }
+ 308   4              }
+ 309   3              else if (cmi->mcnt == CONST)
+ 310   3              {
+ 311   4                  if (mr.id > 3) mr.id = (mr.id - 3) / 3 * 3 + 1; else mr.id = mr.sm->mcnt / 3 * 3 + 1;
+ 312   4              }
+ 313   3              else
+ 314   3              {
+ 315   4                  if (mr.id > 1) mr.id --; else mr.id = (mr.sm->mcnt);
+ 316   4              }
+ 317   3              break;
+ 318   3          }
+ 319   2          case K_DN: case K_DNOK: case K_DNESC:
+ 320   2          {
+ 321   3              if (mr.inEdit==2)
+ 322   3              {
+ 323   4                  key = 0;
+ 324   4              }
+ 325   3              else if (mr.inEdit==1)
+ 326   3              {
+ 327   4                  if (cmi->ItemType == CHAR)
+ 328   4                  {
+ 329   5                      CCHAR(cmi->ptr) -= (key == K_DN) ? 1 : 10;
+ 330   5                  }
+ 331   4                  else if (cmi->ItemType == INTEGER)
+ 332   4                  {
+ 333   5                      CINT(cmi->ptr) -= (key == K_DN) ? 1 : (key == K_DNOK) ? 10 : 100;
+ 334   5                  }
+ 335   4              }
+ 336   3              else if (cmi->mcnt == CONST)
+ 337   3              {
+ 338   4                  if (mr.id < (mr.sm->mcnt) / 3 * 3 + 1) mr.id = (mr.id + 3) / 3 * 3 + 1; else mr.id = 1;
+ 339   4              }
+ 340   3              else
+ 341   3              {
+ 342   4                  if (mr.id < (mr.sm->mcnt)) mr.id ++; else mr.id = 1;
+ 343   4              }
+ 344   3              break;
+ 345   3          }
+ 346   2          case K_OK:
+ 347   2          {
+ 348   3              if (mr.inEdit==2)
+ 349   3              {
+ 350   4                  mr.inEdit = 0;
+ 351   4              }
+ 352   3                      else if (cmi->ItemType == PASSWORD)
+ 353   3                      {
+ 354   4                              mr.mm = cmi->ptr;
+ 355   4                              mr.sm = PasswordMenu;
+ 356   4                  if (CINT((mr.sm+1)->ptr) == 1000)
+ 357   4                  {
+ 358   5                      mr.sm = mr.mm;
+C51 COMPILER V9.00   MENU3                                                                 05/09/2013 21:50:21 PAGE 7   
+
+ 359   5                          if (mr.mm == InfoAdj)
+ 360   5                          {
+ 361   6                              jmemcpy((char *)&IValue, (char *)&Vadj, 24);
+ 362   6                          }
+ 363   5                      mr.mm = 0;
+ 364   5                  }
+ 365   4                              mr.bid = mr.id;
+ 366   4                              mr.id = 1;
+ 367   4                      }
+ 368   3                      else if (cmi->mcnt != CONST && (cmi->ItemType == CHAR || cmi->ItemType == INTEGER))
+ 369   3              {
+ 370   4                  if (mr.inEdit==1)//在设置中
+ 371   4                  {
+ 372   5                      //SaveSetting();
+ 373   5                                      if (mr.mm != 0)
+ 374   5                                      {
+ 375   6                                              if (CINT((mr.sm+1)->ptr) == 1000)
+ 376   6                                              {
+ 377   7                                                      mr.sm = mr.mm;
+ 378   7                                          if (mr.mm == InfoAdj)
+ 379   7                                          {
+ 380   8                                              jmemcpy((char *)&IValue, (char *)&Vadj, 24);
+ 381   8                                          }
+ 382   7                                                      mr.mm = 0;
+ 383   7                                              }
+ 384   6                                              else
+ 385   6                                              {
+ 386   7                                                      mr.mm = 0;
+ 387   7                                                      mr.sm = mr.sm->ptr;
+ 388   7                                                      mr.id = mr.bid;
+ 389   7                                                      mr.bid = 0;
+ 390   7                                              }
+ 391   6                              mr.inEdit = 0;
+ 392   6                                      }
+ 393   5                                      else
+ 394   5                                      {                                               
+ 395   6                              SettingChanged = 1;
+ 396   6                                              if (mr.sm == InfoAdj)   //
+ 397   6                                              {
+ 398   7                                                      if (smb.f == 0) //上一次设置已经通过Modbus写成功了
+ 399   7                                                      {
+ 400   8                                                              smb.f = 1;
+ 401   8                                                              smb.addr = mr.id + 20;
+ 402   8                                                              smb.value = CINT(cmi->ptr);
+ 403   8                                              modscan = 1;
+ 404   8                                              mr.inEdit = 0;
+ 405   8                                                      }
+ 406   7                                              }
+ 407   6                                              else
+ 408   6                                              {
+ 409   7                                                      modscan = -1;
+ 410   7                                              }
+ 411   6                                      }
+ 412   5                  }
+ 413   4                  else        //不在设置中,则进入设置
+ 414   4                  {
+ 415   5                      mr.inEdit = 1;
+ 416   5                  }
+ 417   4              }
+ 418   3              else if (cmi->ItemType == MENU)
+ 419   3              {
+ 420   4                  mr.sm = CMENU(cmi->ptr);
+C51 COMPILER V9.00   MENU3                                                                 05/09/2013 21:50:21 PAGE 8   
+
+ 421   4                  mr.bid = mr.id;
+ 422   4                  mr.id = 1;
+ 423   4      
+ 424   4              }
+ 425   3              else if (cmi->ItemType == FUNCTION)
+ 426   3              {
+ 427   4                  CFUNC(cmi->ptr)();
+ 428   4              }
+ 429   3              break;
+ 430   3          }
+ 431   2          case K_ESC:
+ 432   2          {
+ 433   3              //ReadSetting();
+ 434   3              modscan = -2;
+ 435   3              if (mr.inEdit == 1)
+ 436   3              {
+ 437   4                  mr.inEdit = 0;
+ 438   4              }
+ 439   3      
+ 440   3                      if (mr.sm->ItemType == FUNCTION)
+ 441   3              {
+ 442   4                  CFUNC(mr.sm->ptr)(); 
+ 443   4                              mr.inEdit = 2;
+ 444   4                  Password = 0;            
+ 445   4                  key = 0;
+ 446   4              }
+ 447   3                      else
+ 448   3              {
+ 449   4                  mr.sm = CMENU(mr.sm->ptr);
+ 450   4                  mr.id = mr.bid;//<mr.sm->mcnt?mr.bid:1;
+ 451   4                  mr.bid = 0;
+ 452   4              }
+ 453   3              break;
+ 454   3          }
+ 455   2              default:
+ 456   2                      key = 0;
+ 457   2          }
+ 458   1      
+ 459   1          if (ModMst_Idle && modscan)
+ 460   1          {
+ 461   2                      if (smb.f == 1)
+ 462   2                      {
+ 463   3                              if (ModMst(2,6,smb.addr,smb.value,0)) smb.f = 0;
+ 464   3                      }
+ 465   2                      else if (modscan == -1) //save setting
+ 466   2              {
+ 467   3                  if (ModMst(2, 16, 0x4000, 4, (unsigned char *)&SetValue))
+ 468   3                              {
+ 469   4                      modscan = 0;
+ 470   4                              }
+ 471   3              }
+ 472   2              else if (modscan == -2 || modscan == -3)  //read setting
+ 473   2              {
+ 474   3                  if (modscan == -3) SettingChanged = 1;
+ 475   3                  if (ReadSetting())
+ 476   3                  {
+ 477   4                      modscan = 0;
+ 478   4                  }
+ 479   3              }
+ 480   2          }
+ 481   1      
+ 482   1          if (key)
+C51 COMPILER V9.00   MENU3                                                                 05/09/2013 21:50:21 PAGE 9   
+
+ 483   1          {
+ 484   2              ShowMenu(&mr);
+ 485   2              //ShowChar(108,56,key,1);
+ 486   2              LightOn(127);
+ 487   2              if (mr.sm == Info) DspCnt = 100; else DspCnt = 0;
+ 488   2          }
+ 489   1      
+ 490   1          if (DspCnt > 100)
+ 491   1          {
+ 492   2              ShowMenu(&mr);
+ 493   2              DspCnt = 1;
+ 494   2          }
+ 495   1      
+ 496   1          if (!LightCnt && isBackLightOn)
+ 497   1          {
+ 498   2              LightOff();
+ 499   2          }
+ 500   1      }
+ 501          
+ 502          #endif //__MENUCFILE__
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2843    ----
+   CONSTANT SIZE    =    897    ----
+   XDATA SIZE       =     60    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =     16       7
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,15 @@
+"beep.obj",
+"CommPort0.obj",
+"CommPort1.obj",
+"crc16.obj",
+"flash.obj",
+"key.obj",
+"LCD_Dis.obj",
+"main.obj",
+"Menu3.obj",
+"ModMst.obj",
+"ModSlv.obj",
+"PWM1.obj",
+"Timer.obj" 
+TO "tbups_disp" 
+RAMSIZE(256) 

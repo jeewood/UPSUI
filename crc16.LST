@@ -1,0 +1,48 @@
+C51 COMPILER V9.00   CRC16                                                                 05/09/2013 21:26:07 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE CRC16
+OBJECT MODULE PLACED IN crc16.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE crc16.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          #ifndef __CRC16CFILE__
+   2          #define __CRC16CFILE__
+   3          
+   4          code unsigned int CRC16Table[] =
+   5          {
+   6              0x0000, 0xCC01, 0xD801, 0x1400, 0xF001, 0x3C00, 0x2800, 0xE401,
+   7              0xA001, 0x6C00, 0x7800, 0xB401, 0x5000, 0x9C01, 0x8801, 0x4400
+   8          };
+   9          
+  10          unsigned int crc16(unsigned char *buf, unsigned int len)
+  11          {
+  12   1          xdata unsigned int CRC = 0xFFFF;
+  13   1          xdata unsigned int  i;
+  14   1          xdata unsigned char ch;
+  15   1      
+  16   1          for (i = 0; i < len; i++)
+  17   1          {
+  18   2              ch = *buf++;
+  19   2              CRC = CRC16Table[(ch ^ CRC) & 15] ^ (CRC >> 4);
+  20   2              CRC = CRC16Table[((ch >> 4) ^ CRC) & 15] ^ (CRC >> 4);
+  21   2          }
+  22   1          return CRC;//(CRC>>8) | (CRC<<8);
+  23   1      }
+  24          
+  25          #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    221    ----
+   CONSTANT SIZE    =     32    ----
+   XDATA SIZE       =   ----       5
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       5
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

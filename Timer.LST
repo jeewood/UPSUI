@@ -1,0 +1,179 @@
+C51 COMPILER V9.00   TIMER                                                                 05/09/2013 21:26:09 PAGE 1   
+
+
+C51 COMPILER V9.00, COMPILATION OF MODULE TIMER
+OBJECT MODULE PLACED IN Timer.OBJ
+COMPILER INVOKED BY: C:\Keil\C51\BIN\C51.EXE Timer.c BROWSE DEBUG OBJECTEXTEND
+
+line level    source
+
+   1          #include "define.h"
+   2          
+   3          #ifndef __TIMERCFILE__
+   4          #define __TIMERCFILE__
+   5          
+   6          #ifdef _MODBUSMASTER
+   7          #include "modmst.h"
+   8          #endif
+   9          
+  10          #ifdef _MODBUSSLAVE
+  11          #include "modslv.h"
+  12          #endif
+  13          
+  14          #ifdef _COM0
+  15          #include "CommPort0.h"
+  16          #endif
+  17          
+  18          #ifdef _COM1
+  19          #include "CommPort1.h"
+  20          #endif
+  21          
+  22          #ifdef _HSC
+              #include "HSC.h"
+              #endif
+  25          
+  26          #ifdef _ADC
+              #include "adc.h"
+              #endif
+  29          
+  30          #ifdef _KEY
+  31          #include "key.h"
+  32          #endif
+  33          
+  34          #ifdef _BEEP
+  35          #include "beep.h"
+  36          #endif
+  37          
+  38          #ifdef _MENU
+  39          #include "menu3.h"
+  40          #endif
+  41          
+  42          
+  43          #ifndef PCA_TIMER
+  44          void Init_Timer(){
+  45   1              TMOD&=0xF0;
+  46   1              TMOD|=0x01;
+  47   1              TH0=0xDC;
+  48   1              TL0=0x00;
+  49   1              ET0=1;
+  50   1              TR0=1;
+  51   1      }
+  52          
+  53          void Timer() interrupt 1{       
+  54   1      
+  55   1              //WDT_CONTR = 0x3F;//看门狗复位
+C51 COMPILER V9.00   TIMER                                                                 05/09/2013 21:26:09 PAGE 2   
+
+  56   1      
+  57   1              TH0=0xDC;//0xFC; 
+  58   1              TL0=0x00;//0x6C; 
+  59   1      
+  60   1      #ifdef _COM0
+  61   1              COM0_Rcv(); //COM0接收结束
+  62   1      #endif
+  63   1      
+  64   1      #ifdef _COM1
+  65   1              COM1_Rcv(); //COM1接收结束
+  66   1      #endif
+  67   1      
+  68   1      #ifdef _ADC
+                      adc();
+              #endif
+  71   1      
+  72   1      #ifdef _KEY
+  73   1              keydrv();
+  74   1      #endif
+  75   1      
+  76   1      #ifdef _BEEP
+  77   1              BeepDrv();
+  78   1      #endif
+  79   1      
+  80   1      #ifdef _MENU
+  81   1              MenuDrv();
+  82   1      #endif
+  83   1      
+  84   1      }
+  85          #endif
+  86          
+  87          
+  88          
+  89          //使用PCA为定时器
+  90          #ifdef PCA_TIMER
+              /*定义10mS PCA定时器常量*/
+              #define MS10L=0x00;
+              #define MS10H=0x24;
+              
+              void Init_Timer(){//定义PCA为定时器及PWM使用！采用PCA Module 0为定时器,PCA为PWM.
+              
+                      CMOD=0x80;//0x82; //以Fso/2作为时钟源
+                      CCON=0x00;
+                      CL=0x00;
+                      CH=0x00;
+                      CCAP0L=0x00;            //定时器方式工作
+                      CCAP0H=0x6C;
+                      CCAPM0=0x49;
+              
+                      /***********************如果有NE555在板子上************************
+                      CCAP3L=0x70;            //PWM方式工作0x80=50% FREQ=FSO/2/256=21.6KHz
+                      CCAP3H=0x70;
+                      CCAPM3=0x42;                    //PCA3工作于PWM方式的设定
+                      P2M0=0;                                 //P2.4强推挽输出
+                      P2M1=0x10;
+                      B20=0;                                  //初始化为低电平
+                      *******************************************************************/
+              
+                      //ELVD=1;                  //允许PCA及LVD中断
+                      CR=1;                   //PCA开始工作
+              }
+              
+C51 COMPILER V9.00   TIMER                                                                 05/09/2013 21:26:09 PAGE 3   
+
+              
+              void PCA_Timer(void) interrupt 7{
+                      //static int HT=0;
+                      //int tmpi;
+              
+                      if (CCF0){                                                              //如果是模块0产生的中断
+                              CCF0=0;                                                         //软件清除中断标志
+              
+                              //WDT_CONTR = 0x3F;                                     //看门狗复位
+              
+                              CCAP0L=CCAP0L+MS10L;
+                              CCAP0H=CCAP0H+MS10H;
+                              
+              #ifdef COM0
+                              COM0_Rcv(); //COM0接收结束
+              #endif
+              
+              #ifdef COM1
+                              COM1_Rcv(); //COM1接收结束
+              #endif
+              
+              #ifdef HSC
+                              Hsc();          //模拟量采集
+              #endif
+              
+              #ifdef KEY
+                              keydrv();
+              #endif
+                              BeepDrv();
+              
+                      }
+              }
+              #endif
+ 151          
+ 152          #endif //__TIMERCFILE__
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     94    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

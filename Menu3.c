@@ -23,6 +23,13 @@ typedef struct _strArr
     char **sa;
 } strArr;
 
+typedef struct _SettingModbus
+{
+	char f;
+	int addr;
+	int value;
+} SMB;
+
 enum
 {
     CHAR,
@@ -40,7 +47,8 @@ typedef struct _MenuItem
 {
     char id;
     char *ItemStr;
-    char ItemType;  //高3位用于显示时ptr对应的类型
+    char ItemType;  
+	//高3位用于显示时ptr对应的类型
     //｛CHAR,INTEGER为数字,STRING为预定义的字符串｝
     //低5位当高3位为MENU时,低5位为菜单项数(最多31个)
     void *ptr;
@@ -58,6 +66,7 @@ typedef struct
 } MENUPARAM;
 
 MENUPARAM mr = {0};
+SMB smb = {0};
 
 typedef void (*FUNC)();
 
@@ -360,7 +369,6 @@ void Menu(unsigned char key)
         {
             if (mr.inEdit==1)//在设置中
             {
-                mr.inEdit = 0;
                 //SaveSetting();
 				if (mr.mm != 0)
 				{
@@ -380,11 +388,26 @@ void Menu(unsigned char key)
 						mr.id = mr.bid;
 						mr.bid = 0;
 					}
+	                mr.inEdit = 0;
 				}
 				else
 				{						
                 	SettingChanged = 1;
-                	modscan = mr.id;
+					if (mr.sm == InfoAdj)	//
+					{
+						if (smb.f == 0)	//上一次设置已经通过Modbus写成功了
+						{
+							smb.f = 1;
+							smb.addr = mr.id + 20;
+							smb.value = CINT(cmi->ptr);
+	                		modscan = 1;
+			                mr.inEdit = 0;
+						}
+					}
+					else
+					{
+						modscan = -1;
+					}
 				}
             }
             else	//不在设置中,则进入设置
@@ -435,10 +458,9 @@ void Menu(unsigned char key)
 
     if (ModMst_Idle && modscan)
     {
-		if (modscan > 0)
+		if (smb.f == 1)
 		{
-			ModMst(2,6,modscan+100,(int)*(((unsigned char *)&Vadj)+modscan)
-			,0);
+			if (ModMst(2,6,smb.addr,smb.value,0)) smb.f = 0;
 		}
 		else if (modscan == -1) //save setting
         {
