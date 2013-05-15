@@ -501,6 +501,7 @@ void PutBitmap(unsigned char x,unsigned char y,unsigned char width,unsigned char
 }
 */
 
+/*
 //========================================================================
 // 函数: void ShowChar(unsigned char x,unsigned char y,unsigned char Num,unsigned char type)
 // 描述: 在x、y的位置为显示区域的左上角，显示一个unsigned char型数
@@ -521,6 +522,7 @@ void ShowChar(unsigned char x,unsigned char y,unsigned char a,unsigned char type
 	SPI_Send(type);
 	SPI_SSSet(1);					//完成操作置SS高电平
 }
+*/
 /*
 //========================================================================
 // 函数: void ShowShort(unsigned char x,unsigned char y,unsigned short Num,unsigned char type)

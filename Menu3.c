@@ -212,16 +212,18 @@ code MenuItem InfoAdj[] =
     { -1, " 充电状态:", TYPE(INTEGER,INTEGER), INT(Vadj.ChargeStatus)}
 };
 
+#define PMCNT 1
 code MenuItem PasswordMenu[] =
 {
-    { -1, "请输入设置密码", TYPE(MENU,1), MainMenu},
+    { -1, "请输入设置密码", TYPE(MENU,PMCNT), MainMenu},
     { -1, " 密码:", TYPE(INTEGER,INTEGER), INT(Password)},
     //{2,"退    出",FUNCTION,Exit,MMCNT},
 };
 
+#define CMCNT 2
 code MenuItem ControlMenu[] =
 {
-    { -1, "系统控制", TYPE(MENU,2), MainMenu},
+    { -1, "系统控制", TYPE(MENU,CMCNT), MainMenu},
     { 6, " 启停控制:", TYPE(STRING,INTEGER), INT(SetValue.StartCtrl)},
     { 7, " 手工旁路:", TYPE(STRING,INTEGER), INT(SetValue.ByPassCtrl)}
 };
@@ -482,7 +484,7 @@ void Menu(unsigned char key)
     if (key)
     {
         ShowMenu(&mr);
-        ShowChar(108,56,SetValue.ModbusSA>>8,1);
+        //ShowChar(108,56,SetValue.ModbusSA>>8,1);
 
         LightOn(127);
         if (mr.sm == Info) DspCnt = 1; else DspCnt = 0;
