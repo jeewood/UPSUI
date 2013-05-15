@@ -89,17 +89,17 @@ void LightOn(unsigned char Deg)
 {
     SetBackLight(Deg);
     isBackLightOn = 1;
-	if (SetValue.BKLtime>32768) 
+	if (SetValue.BKLtime>32767) 
 	{
 		LightCnt = -1;
 		SetValue.BKLtime = -1;
 	}
 	else
-	if (SetValue.BKLtime>=600)
+	if (SetValue.BKLtime>=300)
 	{
-		SetValue.BKLtime = 600;
-    	LightCnt = SetValue.BKLtime * 100;
+		SetValue.BKLtime = 300;
 	}
+   	LightCnt = SetValue.BKLtime * 100;
 }
 
 void LightOff() //¹Ø±Õ±³¹â
@@ -496,7 +496,7 @@ void Menu(unsigned char key)
         DspCnt = 1;
     }
 
-    if (!LightCnt && isBackLightOn)
+    if (LightCnt==0 && isBackLightOn)
     {
         LightOff();
     }
