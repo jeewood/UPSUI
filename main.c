@@ -73,7 +73,7 @@ typedef union
 xdata unsigned char Light = 13;
 xdata unsigned char bLight = 13;
 xdata unsigned char Key = 0;
-bit isCom0Setted = 0;
+bit isCom0Setted = 0, ReadSetup = 0;
 
 void main()
 {
@@ -190,15 +190,24 @@ void main()
 
 #ifdef _MODBUSMASTER
 
-	if (ModMst_Idle && modscan == 0)
+	if (ModMst_Idle && mr.stat == 0)
 	{
-		ModMst(2,3,0,12,
+		if (ReadSetup)
+		{
+			ReadSetup = 0;
+			ModMst(2,3,0x4000,10,(unsigned char*)&SetValue);
+		}
+		else
+		{
+			ModMst(2,3,0,12,
 #ifdef _MENU
-		(unsigned char*)&IValue
+			(unsigned char*)&IValue
 #else
-		0
+			0
 #endif
-		);
+			);
+			ReadSetup = 1;
+		}
 	}
 	else
 	{

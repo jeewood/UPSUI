@@ -499,7 +499,7 @@ void PutBitmap(unsigned char x,unsigned char y,unsigned char width,unsigned char
 	}
 	SPI_SSSet(1);					//完成操作置SS高电平
 }
-
+*/
 
 //========================================================================
 // 函数: void ShowChar(unsigned char x,unsigned char y,unsigned char Num,unsigned char type)
@@ -521,6 +521,7 @@ void ShowChar(unsigned char x,unsigned char y,unsigned char a,unsigned char type
 	SPI_Send(type);
 	SPI_SSSet(1);					//完成操作置SS高电平
 }
+/*
 //========================================================================
 // 函数: void ShowShort(unsigned char x,unsigned char y,unsigned short Num,unsigned char type)
 // 描述: 在x、y的位置为显示区域的左上角，显示一个unsigned short型数（16位宽度）
@@ -614,6 +615,7 @@ bit isNum(char* s)
 #define P_FONT	0x04
 #define P_AINV	0x02
 #define P_INV	0x01
+
 unsigned char Print(char x,char y,char* str,char i)
 {
 	char len = (i & (P_CSTR|P_ASTR))?StrLen(str):(i & P_INT)?6:4;
@@ -628,7 +630,6 @@ unsigned char Print(char x,char y,char* str,char i)
 	}
 	else if (i & (P_AINV | P_INV))	//Invert
 	{
-		//SetPaintMode(0,1);
 		if (i & P_AINV)
 		{
 			Rectangle(0,y,127,y+12,1);

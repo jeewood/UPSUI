@@ -28,15 +28,43 @@ typedef struct
 
 typedef struct
 {
-	unsigned char ModbusSA;
-	unsigned char wMode;
-	unsigned char sMode;
-	unsigned char BKLtime;
-	unsigned char BaudRate;
-	unsigned char DataBits;
-	unsigned char StopBits;
-	unsigned char OddEven;
+	unsigned int ModbusSA;
+	unsigned int wMode;
+	unsigned int sMode;
+	unsigned int BKLtime;
+	unsigned int Password;
+	unsigned int BaudRate;
+	unsigned int DataBits;
+	unsigned int StopBits;
+	unsigned int OddEven;
+	unsigned int StartCtrl;
+	unsigned int ByPassCtrl;
 }SValue;
+
+typedef struct _MenuItem
+{
+    char id;
+    char *ItemStr;
+    char ItemType;  
+	//高3位用于显示时ptr对应的类型
+    //｛CHAR,INTEGER为数字,STRING为预定义的字符串｝
+    //低5位当高3位为MENU时,低5位为菜单项数(最多31个)
+    //		 高3位不是MENU时,高3位为变量类型,低5位为本项显示类型
+    void *ptr;
+    //char mcnt;
+} MenuItem;
+
+typedef struct
+{
+    char stat;	//状态
+    char id;
+    char bid; //backup id
+
+    MenuItem *mm;
+    MenuItem *sm;
+} MENUPARAM;
+
+extern MENUPARAM mr;
 
 extern xdata SValue SetValue;
 extern xdata CValue IValue;
