@@ -28,17 +28,17 @@ typedef struct
 
 typedef struct
 {
-	unsigned int ModbusSA;
-	unsigned int wMode;
-	unsigned int sMode;
-	unsigned int BKLtime;
-	unsigned int Password;
-	unsigned int BaudRate;
-	unsigned int DataBits;
-	unsigned int StopBits;
-	unsigned int OddEven;
-	unsigned int StartCtrl;
-	unsigned int ByPassCtrl;
+	unsigned int ModbusSA;	//0
+	unsigned int wMode;		//1
+	unsigned int sMode;		//2	
+	unsigned int BKLtime;	//3		
+	unsigned int Password;	//4		
+	unsigned int BaudRate;	//5		
+	unsigned int DataBits;	//6		
+	unsigned int StopBits;	//7		
+	unsigned int OddEven;	//8		
+	unsigned int StartCtrl;	//9		
+	unsigned int ByPassCtrl;//10			
 }SValue;
 
 typedef struct _MenuItem

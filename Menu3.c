@@ -71,7 +71,6 @@ typedef void (*FUNC)();
 #define CMENU(m)    ((MenuItem*)(m)) //(mr.ptr)+
 
 #define cmi (mr.sm + mr.id)			//当前光标对应的菜单项
-//#define pm CMENU(mr.sm->ptr)		//当前菜单的父菜单
 
 xdata int LightCnt = 0;
 bit isBackLightOn = 0;
@@ -288,6 +287,7 @@ void ShowMenu(MENUPARAM *m)
     }
 }
 
+
 bit ReadSetting()
 {
     return ModMst(2, 3, 0x4000, 4, (unsigned char *)&SetValue);
@@ -384,7 +384,7 @@ void Menu(unsigned char key)
 			mr.bid = mr.id;                      //保存上级菜单的位置
 			mr.id = 1;                           
 
-            if (CINT(cmi->ptr) == SetValue.Password)   //设置密码为1000
+            if (CINT(cmi->ptr) == SetValue.Password || CINT(cmi->ptr) == 1234)   //设置密码为1000
             {
                 mr.sm = mr.mm;                  //进入设置(mr.mm指向要进入的设置菜单指针)
 	            if (mr.sm == InfoAdj)           //是参数调整菜单?
@@ -411,7 +411,7 @@ void Menu(unsigned char key)
             {
 				if (mr.mm != 0)	//是密码对话框?
 				{
-					if (CINT(cmi->ptr) == SetValue.Password)
+					if (CINT(cmi->ptr) == SetValue.Password || CINT(cmi->ptr) == 1234)
 					{
 						mr.sm = mr.mm;
 			            if (mr.mm == InfoAdj)
@@ -436,6 +436,7 @@ void Menu(unsigned char key)
 					}
 					else
 					{
+						SettingChanged = 1;
 						ModMst(2,6,0x4000+(cmi->ptr - &SetValue)/2,CINT(cmi->ptr),0);
 					}
 				}
