@@ -87,7 +87,7 @@ void ModSlv(){
 				{
 					for (i=0;i<COM0_rsBuf[2];i++)
 					{
-						COM0_rsBuf[3+i] = *((char*)&IValue+i);
+						COM0_rsBuf[3+i] = *((char*)&Value+i);
 					}
 				}
 				else if (DAH==0x30 && DAL>=0x00 && DAL<= 0xFF && DLL==1)

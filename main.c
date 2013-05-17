@@ -195,13 +195,13 @@ void main()
 		if (ReadSetup)
 		{
 			ReadSetup = 0;
-			ModMst(2,3,0x4000,10,(unsigned char*)&SetValue);
+			ModMst(2,3,0x4000,24,(unsigned char*)&sValue);
 		}
 		else
 		{
 			ModMst(2,3,0,12,
 #ifdef _MENU
-			(unsigned char*)&IValue
+			(unsigned char*)&Value
 #else
 			0
 #endif

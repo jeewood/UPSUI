@@ -13,9 +13,12 @@
 
 #include "modmst.h"
 
-xdata CValue IValue = {0};
-xdata CValue Vadj = {0};
-xdata SValue SetValue = {0};
+//xdata CValue IValue = {0};
+//xdata CValue Vadj = {0};
+//xdata SValue SetValue = {0};
+
+xdata INTX Value[12];
+xdata INTX sValue[24];
 
 typedef struct _strArr
 {
@@ -75,7 +78,6 @@ typedef void (*FUNC)();
 xdata int LightCnt = 0;
 bit isBackLightOn = 0;
 bit SettingChanged = 1;
-int Password = 0;
 
 xdata unsigned int DspCnt = 0;
 void MenuDrv(void)
@@ -88,17 +90,17 @@ void LightOn(unsigned char Deg)
 {
     SetBackLight(Deg);
     isBackLightOn = 1;
-	if (SetValue.BKLtime>32767) 
+	if (BKLtime>32767) 
 	{
 		LightCnt = -1;
-		SetValue.BKLtime = -1;
+		BKLtime = -1;
 	}
 	else
-	if (SetValue.BKLtime>=300)
+	if (BKLtime>=300)
 	{
-		SetValue.BKLtime = 300;
+		BKLtime = 300;
 	}
-   	LightCnt = SetValue.BKLtime * 100;
+   	LightCnt = BKLtime * 100;
 }
 
 void LightOff() //关闭背光
@@ -124,24 +126,24 @@ void Welcome() //Welcome
 code char *WorkMode[] = {"在线式", "离线式"};
 code char *StartMode[] = {"手动", "自动"};
 
-code char *BaudRate[] = {"1200", "2400", "4800", "9600"};
-code char *DataBits[] = {"8", "7"};
-code char *StopBits[] = {"1", "2"};
-code char *OddEven[] = {"无", "奇", "偶"};
+code char *BaudRateStr[] = {"1200", "2400", "4800", "9600"};
+code char *DataBitsStr[] = {"8", "7"};
+code char *StopBitsStr[] = {"1", "2"};
+code char *OddEvenStr[] = {"无", "奇", "偶"};
 
-code char *StartCtrl[] = {"停止","启动"};
-code char *ByPassCtrl[] = {"旁路","逆变"};
+code char *StartCtrlStr[] = {"停止","启动"};
+code char *ByPassCtrlStr[] = {"旁路","逆变"};
 
 code strArr SettingArray[] =
 {
     {2, WorkMode},      //0
     {2, StartMode},     //1
-    {4, BaudRate},      //2
-    {2, DataBits},      //3
-    {2, StopBits},      //4
-    {3, OddEven},       //5
-	{2, StartCtrl},		//6
-	{2, ByPassCtrl}		//7
+    {4, BaudRateStr},      //2
+    {2, DataBitsStr},      //3
+    {2, StopBitsStr},      //4
+    {3, OddEvenStr},       //5
+	{2, StartCtrlStr},		//6
+	{2, ByPassCtrlStr}		//7
 };
 
 code char *FaultInfo[] =
@@ -156,59 +158,60 @@ code char *FaultInfo[] =
 
 extern code MenuItem MainMenu[];
 
-#define SSCNT 4
+#define SSCNT 5
 code MenuItem SysSetting[] =
 {
     { -1, "系统设置", TYPE(MENU,SSCNT), MainMenu},
-    {0, " 工作方式:", TYPE(STRING,INTEGER), INT(SetValue.wMode)},
-    {1, " 启动模式:", TYPE(STRING,INTEGER), INT(SetValue.sMode)},
-    { -1, " 背光时间:", TYPE(INTEGER,INTEGER), INT(SetValue.BKLtime)},
-    { -1, " 设置密码:", TYPE(INTEGER,INTEGER), INT(SetValue.Password)}
+    {0, " 工作方式:", TYPE(STRING,INTEGER), INT(wMode)},
+    {1, " 启动模式:", TYPE(STRING,INTEGER), INT(sMode)},
+    { -1, " 背光时间:", TYPE(INTEGER,INTEGER), INT(BKLtime)},
+    { -1, " 设置密码:", TYPE(INTEGER,INTEGER), INT(Password)},
+    { -1, " 额定电流:", TYPE(INTEGER,INTEGER), INT(RatedCurr)}
 };
 
 #define CSCNT 5
 code MenuItem ComSetting[] =
 {
     { -1, "通迅设置", TYPE(MENU,CSCNT), MainMenu},
-    { -1, " 站  址:", TYPE(CHAR,INTEGER), INT(SetValue.ModbusSA)},
-    {2, " 波特率:", TYPE(STRING,INTEGER), INT(SetValue.BaudRate)},
-    {3, " 数据位:", TYPE(STRING,INTEGER), INT(SetValue.DataBits)},
-    {4, " 停止位:", TYPE(STRING,INTEGER), INT(SetValue.StopBits)},
-    {5, " 校验位:", TYPE(STRING,INTEGER), INT(SetValue.OddEven)}
+    { -1, " 站  址:", TYPE(CHAR,INTEGER), INT(ModbusSA)},
+    {2, " 波特率:", TYPE(STRING,INTEGER), INT(BaudRate)},
+    {3, " 数据位:", TYPE(STRING,INTEGER), INT(DataBits)},
+    {4, " 停止位:", TYPE(STRING,INTEGER), INT(StopBits)},
+    {5, " 校验位:", TYPE(STRING,INTEGER), INT(OddEven)}
 };
 
 #define IMCNT 11
 code MenuItem Info[] =
 {
     { -1, "系统信息", TYPE(MENU,IMCNT), MainMenu},
-    { -1, " 输入电压:", TYPE(CONST,INTEGER), INT(IValue.ACInV)},
-    { -1, " 输入电流:", TYPE(CONST,INTEGER), INT(IValue.ACInI)},
-    { -1, " 输入频率:", TYPE(CONST,INTEGER), INT(IValue.ACInF)},
-    { -1, " 输出电压:", TYPE(CONST,INTEGER), INT(IValue.InvV)},
-    { -1, " 负载电流:", TYPE(CONST,INTEGER), INT(IValue.LoadI)},
-    { -1, " 输出频率:", TYPE(CONST,INTEGER), INT(IValue.InvF)},
-    { -1, " 输出功率:", TYPE(CONST,INTEGER), INT(IValue.Power)},
-    { -1, " 功率因素:", TYPE(CONST,INTEGER), INT(IValue.Factor)},
-    { -1, " 电池电压:", TYPE(CONST,INTEGER), INT(IValue.BatV)},
-    { -1, " 充电电流:", TYPE(CONST,INTEGER), INT(IValue.BatI)},
-    { -1, " 充电状态:", TYPE(CONST,INTEGER), INT(IValue.ChargeStatus)}
+    { -1, " 输入电压:", TYPE(CONST,INTEGER), INT(ACInV)},
+    { -1, " 输入电流:", TYPE(CONST,INTEGER), INT(ACInI)},
+    { -1, " 输入频率:", TYPE(CONST,INTEGER), INT(ACInF)},
+    { -1, " 输出电压:", TYPE(CONST,INTEGER), INT(InvV)},
+    { -1, " 负载电流:", TYPE(CONST,INTEGER), INT(LoadI)},
+    { -1, " 输出频率:", TYPE(CONST,INTEGER), INT(InvF)},
+    { -1, " 输出功率:", TYPE(CONST,INTEGER), INT(Power)},
+    { -1, " 功率因素:", TYPE(CONST,INTEGER), INT(Factor)},
+    { -1, " 电池电压:", TYPE(CONST,INTEGER), INT(BatV)},
+    { -1, " 充电电流:", TYPE(CONST,INTEGER), INT(BatI)},
+    { -1, " 充电状态:", TYPE(CONST,INTEGER), INT(ChargeStatus)}
 };
 
 #define IACNT 11
 code MenuItem InfoAdj[] =
 {
     { -1, "参数校正", TYPE(MENU,IACNT), MainMenu},
-    { -1, " 输入电压:", TYPE(INTEGER,INTEGER), INT(Vadj.ACInV)},
-    { -1, " 输入电流:", TYPE(INTEGER,INTEGER), INT(Vadj.ACInI)},
-    { -1, " 输入频率:", TYPE(INTEGER,INTEGER), INT(Vadj.ACInF)},
-    { -1, " 输出电压:", TYPE(INTEGER,INTEGER), INT(Vadj.InvV)},
-    { -1, " 负载电流:", TYPE(INTEGER,INTEGER), INT(Vadj.LoadI)},
-    { -1, " 输出频率:", TYPE(INTEGER,INTEGER), INT(Vadj.InvF)},
-    { -1, " 输出功率:", TYPE(INTEGER,INTEGER), INT(Vadj.Power)},
-    { -1, " 功率因素:", TYPE(INTEGER,INTEGER), INT(Vadj.Factor)},
-    { -1, " 电池电压:", TYPE(INTEGER,INTEGER), INT(Vadj.BatV)},
-    { -1, " 充电电流:", TYPE(INTEGER,INTEGER), INT(Vadj.BatI)},
-    { -1, " 充电状态:", TYPE(INTEGER,INTEGER), INT(Vadj.ChargeStatus)}
+    { -1, " 输入电压:", TYPE(INTEGER,INTEGER), INT(Adj_ACInV)},
+    { -1, " 输入电流:", TYPE(INTEGER,INTEGER), INT(Adj_ACInI)},
+    { -1, " 输入频率:", TYPE(INTEGER,INTEGER), INT(Adj_ACInF)},
+    { -1, " 输出电压:", TYPE(INTEGER,INTEGER), INT(Adj_InvV)},
+    { -1, " 负载电流:", TYPE(INTEGER,INTEGER), INT(Adj_LoadI)},
+    { -1, " 输出频率:", TYPE(INTEGER,INTEGER), INT(Adj_InvF)},
+    { -1, " 输出功率:", TYPE(INTEGER,INTEGER), INT(Adj_Power)},
+    { -1, " 功率因素:", TYPE(INTEGER,INTEGER), INT(Adj_Factor)},
+    { -1, " 电池电压:", TYPE(INTEGER,INTEGER), INT(Adj_BatV)},
+    { -1, " 充电电流:", TYPE(INTEGER,INTEGER), INT(Adj_BatI)},
+    { -1, " 充电状态:", TYPE(INTEGER,INTEGER), INT(Adj_ChargeStatus)}
 };
 
 #define PMCNT 1
@@ -223,8 +226,8 @@ code MenuItem PasswordMenu[] =
 code MenuItem ControlMenu[] =
 {
     { -1, "系统控制", TYPE(MENU,CMCNT), MainMenu},
-    { 6, " 启停控制:", TYPE(STRING,INTEGER), INT(SetValue.StartCtrl)},
-    { 7, " 手工旁路:", TYPE(STRING,INTEGER), INT(SetValue.ByPassCtrl)}
+    { 6, " 启停控制:", TYPE(STRING,INTEGER), INT(StartCtrl)},
+    { 7, " 手工旁路:", TYPE(STRING,INTEGER), INT(ByPassCtrl)}
 };
 
 #define MMCNT 5
@@ -290,7 +293,7 @@ void ShowMenu(MENUPARAM *m)
 
 bit ReadSetting()
 {
-    return ModMst(2, 3, 0x4000, 4, (unsigned char *)&SetValue);
+    return ModMst(2, 3, 0x4000, 24, (unsigned char *)&sValue);
 }
 
 void InitMenu()
@@ -311,7 +314,7 @@ void Menu(unsigned char key)
 {
     switch (key)
     {
-    case K_UP: case K_UPOK: case K_UPESC:
+    case K_UP: case K_UPOK: case K_UPESC:	//上键,上键+OK,上键+ESC
     {
         if (mr.stat==BUSY)			//菜单忙,可能是不在菜单中,如调用FUNCTION
         {
@@ -341,7 +344,7 @@ void Menu(unsigned char key)
 		}
         break;
     }
-    case K_DN: case K_DNOK: case K_DNESC:
+    case K_DN: case K_DNOK: case K_DNESC:	//下键,下键+OK,下键+ESC
     {
         if (mr.stat==BUSY)
         {
@@ -384,12 +387,12 @@ void Menu(unsigned char key)
 			mr.bid = mr.id;                      //保存上级菜单的位置
 			mr.id = 1;                           
 
-            if (CINT(cmi->ptr) == SetValue.Password || CINT(cmi->ptr) == 1234)   //设置密码为1000
+            if (CINT(cmi->ptr) == Password || CINT(cmi->ptr) == 1234)   //设置密码为1000
             {
                 mr.sm = mr.mm;                  //进入设置(mr.mm指向要进入的设置菜单指针)
 	            if (mr.sm == InfoAdj)           //是参数调整菜单?
 	            {
-	                jmemcpy((char *)&IValue, (char *)&Vadj, 24);   //复制显示值到设置项中
+	                jmemcpy((char *)&Value, (char *)&sValue, 24);   //复制显示值到设置项中
 	            }
                 mr.mm = 0;                      //已进入设置
             }
@@ -411,12 +414,12 @@ void Menu(unsigned char key)
             {
 				if (mr.mm != 0)	//是密码对话框?
 				{
-					if (CINT(cmi->ptr) == SetValue.Password || CINT(cmi->ptr) == 1234)
+					if (CINT(cmi->ptr) == Password || CINT(cmi->ptr) == 1234)
 					{
 						mr.sm = mr.mm;
 			            if (mr.mm == InfoAdj)
 			            {
-			                jmemcpy((char *)&IValue, (char *)&Vadj, 24);
+			                jmemcpy((char *)&Value, (char *)&sValue, 24);
 			            }
 					}
 					else		//密码不正确,返回原来的菜单
@@ -430,15 +433,8 @@ void Menu(unsigned char key)
 				else		//非密码对话框,即正常菜单
 				{						
 					//此处开始保存编辑的值
-					if (mr.sm == InfoAdj)	//当前实现的是INTEGER类型数据的保存(MISC()==INTEGER)
-					{
-						ModMst(2,6,(cmi->ptr - &Vadj)/2,CINT(cmi->ptr),0);						
-					}
-					else
-					{
-						SettingChanged = 1;
-						ModMst(2,6,0x4000+(cmi->ptr - &SetValue)/2,CINT(cmi->ptr),0);
-					}
+					SettingChanged = 1;
+					ModMst(2,6,0x4000+(cmi->ptr - &sValue)/2,CINT(cmi->ptr),0);
 				}
 				mr.stat = IDLE;
             }
@@ -485,7 +481,7 @@ void Menu(unsigned char key)
     if (key)
     {
         ShowMenu(&mr);
-        //ShowChar(108,56,SetValue.ModbusSA>>8,1);
+        //ShowChar(108,56,ModbusSA>>8,1);
 
         LightOn(127);
         if (mr.sm == Info) DspCnt = 1; else DspCnt = 0;

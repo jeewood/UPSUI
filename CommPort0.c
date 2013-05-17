@@ -12,8 +12,8 @@ unsigned char COM0_CET=0;			//定义计数器
 
 //data char COM0_PARITY=0;
 #ifdef _MENU
-#define COM0_PARITY SetValue.OddEven
-#define ModSlv_SA SetValue.ModbusSA
+#define COM0_PARITY OddEven
+#define ModSlv_SA ModbusSA
 #else
 #define COM0_PARITY 1
 #define ModSlv_SA 02
@@ -45,8 +45,8 @@ void Init_COM0()
 	TMOD|=0x20;
 	
 	//PCON |= 0x80;
-	TH1=BAUD[SetValue.BaudRate]; //波特率9600 11.0592M 0xFD
-	TL1=BAUD[SetValue.BaudRate]; //18.432M 0xFB
+	TH1=BAUD[BaudRate % 4]; //波特率9600 11.0592M 0xFD
+	TL1=BAUD[BaudRate % 4]; //18.432M 0xFB
 
 	SM0 = COM0_PARITY;
 	SM1=1;
@@ -61,8 +61,8 @@ void Reinit_COM0()
 {
 	//EA = 0;
 
-	TH1=BAUD[SetValue.BaudRate % 4]; //波特率9600 11.0592M 0xFD
-	TL1=BAUD[SetValue.BaudRate % 4]; //18.432M 0xFB
+	TH1=BAUD[BaudRate % 4]; //波特率9600 11.0592M 0xFD
+	TL1=BAUD[BaudRate % 4]; //18.432M 0xFB
 	SM0 = COM0_PARITY;
 
 	//EA = 1;
