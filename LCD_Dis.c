@@ -583,6 +583,14 @@ unsigned char StrLen(char * str)
 void jmemcpy(char* s, char * d,unsigned int ls)
 {
 	while(ls--) *d++ =  *s++;
+	*d = 0;
+}
+
+xdata char midarr[23] = {0};
+char *mid(char*s,char b,char l)
+{
+	jmemcpy(s+b,midarr,l);
+	return midarr;
 }
 
 bit isNum(char* s)
@@ -618,7 +626,8 @@ bit isNum(char* s)
 #define P_AINV	0x02
 #define P_INV	0x01
 
-unsigned char Print(char x,char y,char* str,char i)
+
+unsigned char Print(char x,char y,char* str,char i) 
 {
 	char len = (i & (P_CSTR|P_ASTR))?StrLen(str):(i & P_INT)?6:4;
 	bit inv = 1, isn = 0;
@@ -658,9 +667,9 @@ unsigned char Print(char x,char y,char* str,char i)
 		FontSet(0, inv);
 	}
 
+	isn = isNum(str);
 	if (i & P_CSTR)
 	{
-		isn = isNum(str);
 		PutString_cn(x+(isn?1:0),y+(isn?2:0),str);
 	}
 	else if (i & P_ASTR)
@@ -673,10 +682,28 @@ unsigned char Print(char x,char y,char* str,char i)
 	}
 	else if (i & P_CHAR)
 	{
-		//ShowChar(x,y,*str,1);
 		PutString(x+1,y+2,i2s((char)*(char*)str,0x83));
 	}
-	return (x+7*len);
+	return x + ((i & P_CSTR)?13*((len+1)/2):7*len);
+}
+
+void PrintRect(char x,char y,char w,char h,char* str)
+{
+	char len = StrLen(str);
+	char n = w / 13;
+	char r = w % 12;
+	char hn = h / 13;
+	char hr = h % 12;
+	char j;
+
+	x += (r / 2);
+	y += (hr/ 2);	
+
+	for(j=0;j<hn;j++)
+	{
+		Print(x,y+13*j,mid(str,j*2*n,n*2),0x40);
+	}
+
 }
 
 unsigned char cPrint12(unsigned char cfs,unsigned char efs,char line,char Column,char * str,unsigned char i)
@@ -711,56 +738,7 @@ unsigned char cPrint12(unsigned char cfs,unsigned char efs,char line,char Column
 	return (Column+13*len);
 }
 
-/*
-unsigned char PrintNum(unsigned char cfs,unsigned char efs,char line,char Column,unsigned int num,unsigned char i)
-{
-	xdata unsigned char len = ((i&0x10)?5:3);
-	FontMode(1,0);
-	FontSet(efs,1);
-	FontSet_cn(cfs,1);
-	if (line<1) line = 1; if (Column<1) Column=1;
-	if (i&0x0F)
-	{
-		if ((i & 0x80))
-		{
-			//Rectangle(Column-1,Line-1,Column+6*len-1,Line-1,0);
-			Line(Column,line,Column + 6*len,line);
-		}
-		else
-		{
-			FontSet(efs,0);
-			FontSet_cn(cfs,0);
-			FontMode(1,1);
-			Rectangle(Column-1,line-1,Column+6*len-1,line+12,1);
-		}
-	}
 
-	if (i & 0x10)
-	{
-		PutString(Column+2,line,i2s(num,));
-		//ShowShort(Column,Line,num,1);
-	}
-	else
-	{
-		//PutString(Column+2,Line,i2s((char)num));
-		ShowChar(Column+2,line,num,1);
-	}
-	return (Column+13*len);
-}
-*/
-/*
-void Print6(unsigned char fs,char Line,char Column, char * str,unsigned char i)
-{
-	FontMode(1,0);
-	FontSet(fs,1);
-	if (i)
-	{
-		FontSet(fs,0);
-		FontMode(0,1);
-		Rectangle(Column,Line,Column+6*StrLen(str)-1,Line+8,1);
-	}
-	PutString(Column,Line,str);
-	FontMode(1,0);
-}
-*/
 #endif //__LCD_DISCFILE__
+
+

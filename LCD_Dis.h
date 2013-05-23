@@ -36,4 +36,5 @@ extern unsigned char StrLen(char * str);
 extern void jmemcpy(char* s, char * d,unsigned int ls);
 extern bit isNum(char* s);
 extern unsigned char Print(char x,char y,char* str,char i);
+extern void PrintRect(char x,char y,char w,char h,char* str);
 #endif	//__LCD_DIS_h__

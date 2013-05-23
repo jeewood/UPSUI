@@ -36,6 +36,8 @@
 	#define COM1_RSBUF_LEN 120
 #endif
 
+#define const code
+
 //#define _WDT
 #define _TIMER
 //#define _PCA_TIMER

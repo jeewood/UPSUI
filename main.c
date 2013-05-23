@@ -60,6 +60,8 @@
 //#include "key.c"
 #endif
 
+#include "LCD_Dis.h"
+
 typedef union
 {
 	int W;
@@ -73,7 +75,7 @@ typedef union
 xdata unsigned char Light = 13;
 xdata unsigned char bLight = 13;
 xdata unsigned char Key = 0;
-bit isCom0Setted = 0, ReadSetup = 0;
+bit isCom0Setted = 0, ReadSetup = 1;
 
 void main()
 {
@@ -125,6 +127,13 @@ void main()
 #endif
 	ReadSetting();
 
+	/*
+	ClrScreen();
+
+	PrintRect(50,10,60,50,"中华人民共和国中华人民共和国中华人民共和国中华人民共和国中华人民共和国中华人民共和国中华人民共和国中华人民共和国中华人民共和国");
+
+	while(1);
+	*/
 	while(1)
 	{
 
@@ -206,7 +215,6 @@ void main()
 			0
 #endif
 			);
-			ReadSetup = 1;
 		}
 	}
 	else

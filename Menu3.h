@@ -54,7 +54,7 @@ typedef struct _MenuItem
     //低5位当高3位为MENU时,低5位为菜单项数(最多31个)
     //		 高3位不是MENU时,高3位为变量类型,低5位为本项显示类型
     void *ptr;
-    //char mcnt;
+	char *suffix;
 } MenuItem;
 
 typedef struct
