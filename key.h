@@ -7,6 +7,7 @@
 #define K_ESC 0x08
 #define K_AT  0x01
 #define K_OFF 0x04
+#define K_ON  0x44
 
 #define K_UPOK K_UP+K_OK
 #define K_DNOK K_DN+K_OK
@@ -16,6 +17,8 @@
 extern void InitKeyDrv(void);
 extern void keydrv(void);
 extern unsigned char GetKey(void);
+extern unsigned int KeyDly();
+extern unsigned char KeyPressed();
 
 extern void Indicator(unsigned char mask);
 

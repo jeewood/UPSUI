@@ -50,6 +50,8 @@ void Init_Timer(){
 	TR0=1;
 }
 
+extern void KeyDlyDrv();
+
 void Timer() interrupt 1{	
 
 	//WDT_CONTR = 0x3F;//ø¥√≈π∑∏¥Œª
@@ -80,7 +82,6 @@ void Timer() interrupt 1{
 #ifdef _MENU
 	MenuDrv();
 #endif
-
 }
 #endif
 

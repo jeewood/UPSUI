@@ -134,7 +134,7 @@ const char *StopBitsStr[] = {"1", "2"};
 const char *OddEvenStr[] = {"无", "奇", "偶"};
 
 const char *StartCtrlStr[] = {"停止","启动"};
-const char *ByPassCtrlStr[] = {"旁路","逆变"};
+//const char *ByPassCtrlStr[] = {"旁路","逆变"};
 
 const strArr SettingArray[] =
 {
@@ -144,8 +144,8 @@ const strArr SettingArray[] =
     {2, DataBitsStr},      //3
     {2, StopBitsStr},      //4
     {3, OddEvenStr},       //5
-	{2, StartCtrlStr},		//6
-	{2, ByPassCtrlStr}		//7
+	{2, StartCtrlStr}		//6
+//	{2, ByPassCtrlStr}		//7
 };
 
 const char *FaultInfo[] =
@@ -224,20 +224,21 @@ const MenuItem PasswordMenu[] =
     //{2,"退    出",FUNCTION,Exit,MMCNT},
 };
 
-#define CMCNT 2
+/*
+#define CMCNT 1
 const MenuItem ControlMenu[] =
 {
     { -1, "系统控制", TYPE(MENU,CMCNT), MainMenu,0},
-    { 6, " 启停控制:", TYPE(STRING,INTEGER), INT(StartCtrl),0},
-    { 7, " 手工旁路:", TYPE(STRING,INTEGER), INT(ByPassCtrl),0}
+    { 6, " 启停控制:", TYPE(STRING,INTEGER), INT(StartCtrl),0}
+//    { 7, " 手工旁路:", TYPE(STRING,INTEGER), INT(ByPassCtrl),0}
 };
-
-#define MMCNT 5
+*/
+#define MMCNT 4
 const MenuItem MainMenu[] =
 {
     { -1, "主菜单", TYPE(FUNCTION,MMCNT), Welcome,0},
     { -1, " 系统信息", TYPE(MENU,0), Info,"系统运行参数显示"},
-    { -1, " 系统控制", TYPE(MENU,0), ControlMenu,"系统启停控制和手动旁路"},
+//    { -1, " 系统控制", TYPE(MENU,0), ControlMenu,"系统启停控制和手动旁路"},
     { -1, " 系统设置", TYPE(PASSWORD,0), SysSetting,"系统运行方式设置"},
     { -1, " 通讯设置", TYPE(PASSWORD,0), ComSetting,"后台通讯接口参数设置"},
     { -1, " 参数校正", TYPE(PASSWORD,0), InfoAdj,"系统运行参数校正"}

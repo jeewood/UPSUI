@@ -36,6 +36,7 @@ xdata WByte Tmpi;
 
 xdata unsigned char ModMst_StartAddr = 32;
 xdata unsigned char ModMst_MaxAddr = 15;
+xdata unsigned char MODMST_STAT = 0;
 
 void ModMst_Rcv();
 
@@ -200,7 +201,8 @@ void ModMst_Rcv(){
 		//ShowChar(0,0,COM1_RcvCount,1);
 		if (COM1_RcvCount==0)
 		{
-			*ModMst_RTN = 0xFF;
+			//*ModMst_RTN = 0xFF;
+			MODMST_STAT = 0xFF;
 		}
 		else if (crc16(COM1_rsBuf,COM1_RcvCount)==0 && COM1_rsBuf[1]>=1 && COM1_rsBuf[1]<=4)
 		{
@@ -208,6 +210,11 @@ void ModMst_Rcv(){
 			{
 				*(ModMst_RTN+i) = COM1_rsBuf[i+3];
 			}
+			MODMST_STAT = 0;
+		}
+		else
+		{
+			MODMST_STAT = 2;
 		}
 
 		COM1_RcvCount = 0;

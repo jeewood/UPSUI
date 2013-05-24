@@ -75,7 +75,8 @@ typedef union
 xdata unsigned char Light = 13;
 xdata unsigned char bLight = 13;
 xdata unsigned char Key = 0;
-bit isCom0Setted = 0, ReadSetup = 1;
+bit isCom0Setted = 0;
+bit ReadSetup = 1;
 
 void main()
 {
@@ -141,7 +142,7 @@ void main()
 
 #ifdef _KEY
 	Key = GetKey();
-	
+	/*	
 	if (Light == bLight)
 	{
 		if (Key==K_AT)
@@ -190,16 +191,33 @@ void main()
 		//Beep(0);
 	}
 	Indicator(Light);
-	
-#ifdef _MENU	
-	Menu(Key);		
-#endif
+	*/
 
+
+	if (Key == K_ON)
+	{
+		Indicator(1);
+		StartCtrl = 1;
+		ModMst(2,6,0x4015, StartCtrl,0);
+	}
+	else	
+	if (Key == K_OFF)
+	{
+		StartCtrl = 0;
+		ModMst(2,6,0x4015, StartCtrl,0);
+		Indicator(0);
+	}
+	else
+	{
+#ifdef _MENU	
+		Menu(Key);		
+#endif
+	}
 #endif	//_KEY defined
 
 #ifdef _MODBUSMASTER
 
-	if (ModMst_Idle && mr.stat == 0)
+	if (ModMst_Idle && mr.stat == 0 && !KeyPressed())
 	{
 		if (ReadSetup)
 		{

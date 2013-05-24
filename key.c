@@ -1,4 +1,6 @@
 #include "define.h"
+#include "key.h"
+#include "beep.h"
 
 #ifndef __KEYCFILE__
 #define __KEYCFILE__
@@ -19,7 +21,6 @@ sbit K6L=P2^4;			//Key 6 Indicator
 
 xdata unsigned char keycode = 0;
 xdata unsigned char keycode_bak = 0;
-
 xdata unsigned int KeyCnt = 0;
 
 void InitKeyDrv(void)
@@ -93,26 +94,57 @@ void keydrv(void)
 	}
 	
 	if (KeyCnt) KeyCnt++; 
-	//return keycode;		
+}
+
+unsigned int KeyDly()
+{
+	return KeyCnt;
+}
+
+bit isKeyOn = 0;
+unsigned char KeyPressed()
+{
+	return (keycode_bak!=0);
 }
 
 unsigned char GetKey(void)
 {
+	xdata unsigned char keys;
 	if (keycode)
 	{
 		if (keycode != keycode_bak)
 		{
+			Beep(1);
+			if (keycode_bak==K_UP || keycode_bak == K_DN)
+			{
+				keycode_bak = keycode;
+				KeyCnt = 1;
+				return keycode_bak;
+			}
 			keycode_bak = keycode;
 			KeyCnt = 1;
-			return keycode_bak;
 		}
-		else if (KeyCnt>200 && (KeyCnt % 10 == 0))
+		else if (KeyCnt>300 && (KeyCnt % 10 == 0) && !isKeyOn)
 		{
+			Beep(1);
+			if (keycode_bak==K_OFF) 
+			{
+				isKeyOn = 1;
+				return K_ON;
+			}
 			return keycode_bak;
 		}
 	}
 	else
 	{
+		if (!isKeyOn)
+		{
+			KeyCnt = 0;
+			keys = keycode_bak;		
+			keycode_bak = 0;
+			return keys;
+		}
+		isKeyOn = 0;
 		KeyCnt = 0;
 		keycode_bak = 0;
 	}
